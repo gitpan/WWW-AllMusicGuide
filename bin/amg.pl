@@ -15,9 +15,11 @@ Options:
   --covers     : Save album covers
   --manual     : Don't automatically select likely matches
   --quiet      : Don't show progress info
+  --verbose    : Show progress info
   --url        : Use url (default http://www.allmusic.com)
   --perl       : Output as perl data structures
   --python     : Output as python data structures
+  --php        : Output as serialized php array
 
   --nocache    : Disable caching of HTML responses
   --nocroak    : Don't die when a parse error is encountered
@@ -54,9 +56,11 @@ my ( $opt_album,
      $opt_quiet, 
      $opt_perl,
      $opt_python, 
+     $opt_php,
 	 $opt_readable,
      $opt_save, 
-     $opt_url );
+     $opt_url,
+     $opt_verbose );
 
 GetOptions("album=s"       => \$opt_album,
            "artist=s"      => \$opt_artist,
@@ -68,11 +72,14 @@ GetOptions("album=s"       => \$opt_album,
            "nocache"       => \$opt_nocache,
            "nocroak"       => \$opt_nocroak,
            "perl"          => \$opt_perl,
+           "php"           => \$opt_php,
            "python"        => \$opt_python,
            "quiet"         => \$opt_quiet,
 		   "readable"      => \$opt_readable,
            "save=s"        => \$opt_save,
-           "url=s"         => \$opt_url
+           "url=s"         => \$opt_url,
+           "verbose"       => \$opt_verbose
+
           );
 
 # If none of --artist, --album, or -id were specified and arguments were
@@ -98,7 +105,7 @@ if (defined($opt_dump) && !$opt_dump) {
 
 # --python or --perl imply --quiet
 
-if ($opt_python || $opt_perl) {
+if (($opt_python || $opt_perl || $opt_php) && !$opt_verbose) {
     $opt_quiet = 1;
 }
 
@@ -163,6 +170,8 @@ if ($opt_perl) {
     print dump_perl( $result );
 } elsif ($opt_python) {
     print dump_python( $result );
+} elsif ($opt_php) {
+    print dump_php( $result );
 } elsif ($opt_readable) {
 	print dump_readable( $result );
 } else {
@@ -236,6 +245,84 @@ sub dump_python
     $str =~ s/;\s*$/\n/mg;
     return $str;
 }
+
+
+sub dump_php 
+{
+ 	my ($result) = @_;
+ 	return php_serialize($result, '', 1);
+}
+
+  
+sub php_serialize 
+{
+ 	my ($data, $key, $no_key) = @_;
+ 	my $str;
+  
+ 	$str .= php_serialize_val($key)
+ 		unless ($no_key);
+ 	
+ 	if ( ref($data) =~ /hash/i ) {
+ 		my $num = keys(%{$data});
+ 		$str .= "a:$num:{";
+ 		foreach my $key ( keys(%$data) ) {
+ 			$str .= php_serialize($$data{$key}, $key);
+ 		}
+ 		$str .= '}';
+ 	} elsif ( ref($data) =~ /array/i ) {
+ 		my $num = @{$data};
+ 		$str .= "a:$num:{";
+ 		for (my $key=0; $key < @$data; $key++) {
+ 			$str .= php_serialize( $$data[$key], $key )
+ 		}
+ 		$str .= '}';
+ 	} elsif ( ! ref($data) ) {
+ 		$str .= php_serialize_val($data);
+ 	} else {
+ 		die('error, bad datatype!');
+ 	}
+ 
+ 	return $str;
+}
+
+ 
+sub php_serialize_val 
+{
+ 	my ($val) = @_;
+ 	my $str;
+ 
+ 	if ($val =~ /^\d+$/) {
+ 		$str = "i:$val;";
+ 	} elsif ($val =~ /^\d+\.\d+$/) {
+ 		$str = "d:$val;";
+ 	} elsif (($val eq "\0") || ($val =~ /null/i)) {
+ 		$str = "N;";
+ 	} else {
+ 		my $str_len = length($val);
+ 		$str = "s:$str_len:\"$val\";";
+ 	}
+ 
+ 	return $str;
+}
+
+
+# sub dump_php
+# {
+#     my ($result) = @_;
+
+#     $Data::Dumper::Indent = 1;
+
+#     my $str = Dumper($result);
+
+#     $str =~ s/\$VAR1 = //mg;
+#     $str =~ s/;\s*$/\n/mg;
+#     $str =~ s/\{/array\(/mg;
+#     $str =~ s/\}/\)/mg;
+#     $str =~ s/\[\n/array\(\n/mg;
+#     $str =~ s/\](,?\n)/\)\1/mg;
+
+#     return "$str;";
+# }
 
 
 sub readfile

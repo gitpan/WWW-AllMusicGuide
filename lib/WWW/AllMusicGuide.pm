@@ -103,7 +103,7 @@ otherwise specified.  The format for date strings varies.
 Contains the following keys:
 
   FORMED_DATE, FORMED_LOCATION, DISBANDED_DATE, DISBANDED_LOCATION 
-  BORN_DATE, BORN_LOCATION, DIED_DATE, DIED_LOCATION
+  BORN_DATE, BORN_LOCATION, DIED_DATE, DIED_LOCATION, IMAGE_URL, BIO
 
   YEARS_ACTIVE  (listref, e.g. [ '70s', '80s', '90s' ])
 
@@ -136,7 +136,7 @@ Contains the following keys:
 Each Album Info hashref may contain the following keys:
 
   ARTIST, ARTIST_ID, ALBUM_TITLE, INPRINT, RELEASE_DATE, AMG_RATING, 
-  MARC_ID, TIME,
+  MARC_ID, TIME, COVER_URL, REVIEW, REVIEWER
 
   GENRE   (listref, e.g. [ 'Rock' ])
   STYLES  (listref, e.g. [ 'Jazz-Rock', 'Pop/Rock' ])
@@ -168,9 +168,11 @@ Documentation not written yet.  Use Data::Dumper to see result structure.
 
 Documentation not written yet.  Use Data::Dumper to see result structure.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Mohamed Hendawi (moe AT hendawi DOT com)
+Mohamed Hendawi (moe334578-amg AT yahoo DOT com)
+
+Updated by David Gubitosi, 2003.
 
 =head1 WARNING
 
@@ -178,9 +180,45 @@ The API and format of structures may change between subsequent versions.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2002 Mohamed Hendawi. All rights reserved. This program is
+Copyright (c) 2004 Mohamed Hendawi. All rights reserved. This program is
 free software; you can redistribute it and/or modify it under the same
 terms as Perl itself.
+
+=head1 CHANGES
+
+=head2 Version 0.06 - 1/24/2004
+
+=over 4
+
+=item * Initial checkin to SourceForge project.
+
+=item * Added prereq check for HTML::TreeBuilder to Makefile.PL and in AllMusicGuide.pm.
+
+=item * Fixes to parse_album_search_results() parsing.
+
+=back 
+
+Incorporated changes and fixes from Dave Gubitosi:
+
+=over 4
+
+=item * added artist image URL
+
+=item * added artist bio
+
+=item * added album review
+
+=item * added album reviewer
+
+=item * some fixes to track credit parser
+
+=item * some fixes to the logging function, for testing :)
+
+=item * fixed some other minor things because Allmusic.com keeps changing their structure slightly
+
+=back
+
+
 
 =cut
 
@@ -194,7 +232,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = "0.05";
+$VERSION = "0.06";
 
 use strict;
 use Carp;
@@ -202,10 +240,19 @@ use File::Basename;
 use File::Path;
 use File::Spec;
 use Data::Dumper;
-use HTML::TreeBuilder;
 use LWP::Simple;
 use HTTP::Request;
 use HTTP::Response;
+
+BEGIN {
+	if (!eval("require HTML::TreeBuilder;")) {
+        print STDERR "\nYou need to install HTML::TreeBuilder in order to use WWW::AllMusicGuide\n\n";
+        print STDERR "You can try the following:\n\n";
+        print STDERR "  > perl -MCPAN -e shell\n";
+        print STDERR "  cpan> install HTML::TreeBuilder\n\n\n";
+        die;
+	}
+}
 
 my $AMG_IMG_PATH = "/i";
 
@@ -227,13 +274,11 @@ my $CREDITS_ROW_CLASS = "co1";
 
 # ----- ALBUM SEARCH RESULTS -------------------------------------------------
 #
-# To identify an album search results page we look for a special sentinel <th>
-# cell that has $ALBUM_RESULTS_HEADER_BG as a background and 
-# $ALBUM_RESULTS_SENTINEL as text content.
+# To identify an album search results page we look for a special sentinel <td>
+# cell that has $ALBUM_RESULTS_SENTINEL as text content.
 
-my $ALBUM_RESULTS_HEADER_BG = "$AMG_IMG_PATH/bgr02.gif";
-my $ALBUM_RESULTS_SENTINEL  = "AMG Rating";
-my $ALBUM_RESULTS_ROW_CLASS = "co1";
+my $ALBUM_RESULTS_RELEVANCE_IMG = "$AMG_IMG_PATH/red_dot.jpg";
+my $ALBUM_RESULTS_SENTINEL      = "albums with titles like";
 
 # ----- ARTIST SEARCH RESULTS -------------------------------------------------
 #
@@ -308,7 +353,7 @@ my %Images = ( $NOT_AMG_PICK_IMG => [ "AMG_PICK", 0 ],
                $NOT_IN_PRINT_IMG => [ "IN_PRINT", 0 ],
              );
 
-my $Def_Agent_Str    = "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.0)";
+my $Def_Agent_Str    = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)";
 
 sub new
 {
@@ -589,7 +634,18 @@ sub parse_artist_page
             $artist->{ "INSTRUMENTS" } = [ split(/\s*,\s*/, $val) ];
 
         }
+
     }
+
+    # inserted by DG - finds artist bio
+    my $elem = $tb->look_down("_tag","div","id","artbio");
+    my $elem_val = strip($elem->as_text());
+    $artist->{ "BIO" } = $elem_val;
+
+    # inserted by DG - finds artist pic
+    $elem = $tb->look_down("_tag","img","name","artistpic");
+    my $url = $elem->attr("src");
+    $artist->{ "IMAGE_URL" } = $url;
 
     $self->progress("ok\n"); # done parsing artist info
 
@@ -771,33 +827,46 @@ sub parse_album_search_results
     my ($self, %params) = @_;
 
     my $tree = $params{ "-tree" } || croak "Must specify -tree\n";
+#    $tree->dump();
 
-    my $elem = $tree->look_down("_tag", "th",
-                                "background", $ALBUM_RESULTS_HEADER_BG,
+    my $elem = $tree->look_down("_tag", "td",
                                 sub { $_[0]->as_text() =~ /$ALBUM_RESULTS_SENTINEL/ });
-
     my @search_results;
     if ($elem) {
         my $table = $elem->look_up("_tag", "table");
 
         my @results;
-        foreach my $table_row ($table->look_down("_tag", "tr", 
-                                                 "class", $ALBUM_RESULTS_ROW_CLASS)) {
+        foreach my $table_row ($table->look_down("_tag", "tr")) {
             my @cells = $table_row->look_down("_tag", "td");
-            my ($rating, $artist, $title, $year, $genre) = @cells;
+            my ($dummy, $relevance, $text, $genre) = @cells;
 
-            my $record;
-
-            $self->parse_images($rating, $record);
-            $record->{ "ARTIST" } = strip($artist->as_text());
-            $record->{ "ALBUM_TITLE" } = strip($title->as_text());
-
-            my $link = $title->look_down("_tag", "a");
+            next if (!$text);
+            my $record = {};
+            
+            my $link = $text->look_down("_tag", "a");
             if ($link) {
                 $record->{ "ALBUM_ID" } = extract_object_id($link->attr("href"));
             }
 
-            $record->{ "YEAR" } = strip($year->as_text());
+            if ($relevance) {
+                my $img = $relevance->look_down("_tag", "img");
+                $record->{ "RELEVANCE" } = $img->attr("width");
+            }
+
+            $text = $text->as_text();
+            
+            if ($text =~ m/^(.*) - (.*)$/) 
+            {
+                my $title = strip($1);
+                $record->{ "ARTIST" } = strip($2);
+                if ($title =~ m/^(.*) \[(\d+)\]/) {
+                    $record->{ "ALBUM_TITLE" } = strip($1);
+                    $record->{ "YEAR" } = strip($2);
+                } else {
+                    $record->{ "ALBUM_TITLE" } = $title;
+                }
+            }
+            
             $record->{ "GENRE" } = strip($genre->as_text());
 
             push @search_results, $record;
@@ -848,10 +917,10 @@ sub parse_discography
         $html = substr($html, $begin_disco_tables);
     } else {
 
-        $self->parse_error( "Could not find image starting discography\n" );
+        $self->parse_error( "Could not find image starting discography for $artist\n" );
         $self->progress( "Result will contain an empty discography\n" );
 
-        $artist->{ "discography" } = [];
+        $artist->{ "DISCOGRAPHY" } = [];
         return;
     }
 
@@ -868,23 +937,28 @@ sub parse_discography
     my @tables = $tb->look_down("_tag", "table");
     my @tables_to_parse;
 
-    my @DISCO_TYPES = ( $DISCO_ALBUMS_IMG, $DISCO_COMPS_IMG, $DISCO_EPS_IMG, $DISCO_BOOTLEGS_IMG);
+    my @DISCO_TYPES = ($DISCO_ALBUMS_IMG, $DISCO_COMPS_IMG, $DISCO_EPS_IMG, $DISCO_BOOTLEGS_IMG);
 
     my $table;
     while (@tables) {
         $table = shift @tables;
 
-#        print "=-"x50,"\n";
-#        print $table->as_HTML();
-#        print "=-"x50,"\n";
+        #print "=-"x50,"\n";
+        #print $table->as_HTML();
+        #print "=-"x50,"\n";
 
         foreach my $disco_type (@DISCO_TYPES) {
             if ($table->look_down("_tag", "img", "src", $disco_type)) {
                 $table = shift @tables;
 
-                if ($disco_type eq $DISCO_ALBUMS_IMG) {
-                    $table = shift @tables;
-                }
+                #print "**FIRST SHIFT**"x8,"\n";
+                #print $table->as_HTML();
+                #print "=-"x50,"\n";
+
+
+                #if ($disco_type eq $DISCO_ALBUMS_IMG) {
+                #    $table = shift @tables;
+                #}
 
                 # Sometimes the albums list will be preceded by another table
                 # containing album cover links to featured albums.  We ignore
@@ -897,9 +971,9 @@ sub parse_discography
 
                 $table->{ "DISCO_TYPE" } = $disco_type;
 
-#                print "=====[ Adding discography table ]*"x80, "\n";
-#                print "ADDING TABLE: ", $table->as_HTML();
-#                print "*"x80, "\n";
+                #print "=====[ Adding discography table ]*"x4, "\n";
+                #print "ADDING TABLE: ", $table->as_HTML();
+                #print "*"x50, "\n";
 
                 push @tables_to_parse, $table;
                 last;
@@ -1103,15 +1177,30 @@ END
             my $cell = $cells[$i];
             next if ($cell->as_text =~ m/^\s*$/);
 
+            #print "astext: " . $cell->as_text() . "\n";
+            #print "stripped: " . strip($cell->as_text()) . "\n";
+
             my $trackinfo = strip($cell->as_text());
             if ($trackinfo =~ s/\s*-?\s*(\d\d?:\d\d)//) {
                 $track->{ "LENGTH" } = $1;
             }
 
+            #print "after len: $trackinfo\n";
+
             if ($trackinfo =~ s/(.*)\(([^\)]+)\)//) {
                 $track->{ "CREDIT" } = $2;
                 $trackinfo = $1;
+            #print "credits = " . $track->{CREDIT} . "\n";
+            #print "after credits: $trackinfo\n";
             }
+
+            if ($trackinfo =~ s/(.*)performed by(.*)$//i) {
+                $track->{ "CREDIT" } = strip($2);
+                $trackinfo = $1;
+            #print "credits = " . $track->{CREDIT} . "\n";
+            #print "after credits: $trackinfo\n";
+            }
+
 
             $track->{ "NAME" } = strip($trackinfo);
         }
@@ -1228,6 +1317,13 @@ sub parse_album_cover
 
     return if (!$review_table);
 
+    #inserted by DG - returns album review
+    my $album_review = strip($review_table->as_text());
+    $album_review =~ s/\&mdash\;(.*)$//;
+    my $reviewer = $1;
+    $album->{ "REVIEWER" } = strip($reviewer);
+    $album->{ "REVIEW" } = $album_review;
+
     my $album_img = $review_table->look_down("_tag", "img",
                                              sub { $_[0]->attr("width") > 100 });
 
@@ -1241,10 +1337,10 @@ sub parse_album_cover
     return if (!$self->save_covers);
 
     my $covers_dir = $self->save_covers;
-    my $cover_filename = "$covers_dir/$album->{ ARTIST } $album->{ ALBUM_TITLE }.$extension";
+    my $cover_filename = "$covers_dir/$album->{ ARTIST }-$album->{ ALBUM_TITLE }.$extension";
 
     $cover_filename =~ s/[\"()\"]//g;
-    $cover_filename =~ s/\s/-/g;
+    #$cover_filename =~ s/\s/-/g;
 
     $self->progress("saving album cover $cover_filename...");
     my $response_code = getstore( $cover_url, $cover_filename);
@@ -1289,7 +1385,7 @@ sub extract_object_id
     my ($str) = @_;
     if ($str =~ m/sql=([^&]+)/) {
         return $1;
-    } elsif ($str =~ m/z\(\"([^\"]+)\"/) {
+    } elsif ($str =~ m/z\(\'([^\']+)\'/) {
         return $1;
     } else {
         die "Cannot extract object ID from string $str\n";
@@ -1496,6 +1592,7 @@ sub progress
         &$target(@_);
 	} elsif ($target) {
         print $target @_;
+	$target->autoflush(1);
     }
 }
 
@@ -1506,7 +1603,7 @@ sub progress
 # This next module is a Browser object that the AMG object uses internally to
 # access the allmusic site.  It wraps most of the LWP stuff.  The object is
 # not really designed for reuse as of now and so should be pretty much ignored
-# (unless it"s broken)
+# (unless it"s broken).  I probably want to get rid of it at some point.
 
 # Subclass LWP::UserAgent to override redirect_ok so we can handle our
 # own redirects
@@ -1531,10 +1628,8 @@ use HTTP::Cookies;
 use HTTP::Request;
 use HTTP::Response;
 use File::Path;
-use HTML::TreeBuilder;
 use URI::URL;
 use URI::Escape;
-
 use Data::Dumper;
 
 $Browser::Def_Num_Attempts = 5;
@@ -1591,7 +1686,7 @@ sub new
                 "cache_dir"      => $cache_dir,
                 "expire_cache"   => $expire_cache,
                 "progress_fn"    => $progress_fn,
-                "dump_replies" => $dump_replies,
+                "dump_replies"   => $dump_replies,
                 "dump_tree"      => $dump_tree
               };
 
@@ -1718,6 +1813,8 @@ sub make_cache_filename
     }
 
     $cache_fn =~ s|\-$||g;
+    $cache_fn =~ s|[\?=]||g;
+#    print "CACHE FILENAME = $cache_fn\n";
     
     return File::Spec->catfile($self->cache_dir, $cache_fn);
 }
@@ -2578,6 +2675,7 @@ sub writelog
     my $log_fh = $self->{ "log_fh" };
     if ($log_fh) {
         print $log_fh @args;
+        $log_fh->autoflush(1);
     }
 }
 
