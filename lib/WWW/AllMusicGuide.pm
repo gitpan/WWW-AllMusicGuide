@@ -194,7 +194,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = "0.04";
+$VERSION = "0.05";
 
 use strict;
 use Carp;
@@ -874,13 +874,21 @@ sub parse_discography
     while (@tables) {
         $table = shift @tables;
 
+#        print "=-"x50,"\n";
+#        print $table->as_HTML();
+#        print "=-"x50,"\n";
+
         foreach my $disco_type (@DISCO_TYPES) {
             if ($table->look_down("_tag", "img", "src", $disco_type)) {
                 $table = shift @tables;
 
+                if ($disco_type eq $DISCO_ALBUMS_IMG) {
+                    $table = shift @tables;
+                }
+
                 # Sometimes the albums list will be preceded by another table
                 # containing album cover links to featured albums.  We ignore
-                # this table if we recognize it by it"s table background.
+                # this table if we recognize it by its table background.
 
                 if (($disco_type eq $DISCO_ALBUMS_IMG) && 
                     ($table->attr("background") eq $FEATURED_ALBUMS_BG)) {
@@ -888,6 +896,11 @@ sub parse_discography
                 }
 
                 $table->{ "DISCO_TYPE" } = $disco_type;
+
+#                print "=====[ Adding discography table ]*"x80, "\n";
+#                print "ADDING TABLE: ", $table->as_HTML();
+#                print "*"x80, "\n";
+
                 push @tables_to_parse, $table;
                 last;
             }
@@ -901,9 +914,19 @@ sub parse_discography
     my @discography;
     foreach my $table (@tables_to_parse) {
         my $disco_type = $table->{ "DISCO_TYPE" };
+        
+        if ($self->dump("all")) {
+            print "PARSE DISCOGRAPHY TABLE (disco_type = $disco_type)\n\n";
+        }
 
         foreach my $table_row ($table->look_down("_tag", "tr")) {
             my @cells = $table_row->look_down("_tag", "td");
+            if ($self->dump("all") && @cells) {
+                for (my $i=0; $i<@cells; $i++) {
+                    print "  col $i: ", $cells[$i]->as_text(), "\n";
+                }
+            }
+
             next if (@cells < 5);
 
             my $record = {};
@@ -1417,6 +1440,49 @@ sub parse_error
             die "PARSE ERROR: ", @_;
         }
     }
+}
+
+
+# - CHUNK FUNCTIONS - 
+
+sub chunk_width
+{
+    my ($self, $width) = @_;
+    if (defined($width)) {
+        $self->{ chunk_width } = $width;
+    }
+    return $self->{ chunk_width };
+}
+
+
+sub chunk_open
+{
+    my ($self, $type, $delim) = @_;
+    
+    $delim ||= "=";
+
+    my $num_delims = $self->chunk_width / len($delim);
+    my $str = $delim x $num_delims;
+    
+
+    
+    
+}
+
+
+sub chunk_close
+{
+    
+
+}
+
+
+sub write_chunk
+{
+    my ($self) = @_;
+
+    $self->open_chunk();
+    $self->close_chunk();
 }
 
 

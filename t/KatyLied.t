@@ -1,14 +1,31 @@
 #!/usr/bin/env perl
 
+$usage = <<END;
+
+usage: $0 [--help]
+
+END
+
 use strict;
 use FindBin qw( $RealBin );
-use lib "testlib", "t/testlib";
+use lib "testlib", "t/testlib", "$RealBin/../lib";
 use Data::Dumper;
 use Test::Tools;
 use WWW::AllMusicGuide;
+use Getopt::Long;
+
+use vars qw( $usage );
+
+my ($opt_usage);
+
+GetOptions( "help" => \$opt_usage );
+
+if ($opt_usage) {
+    print STDERR $usage;
+    exit(1);
+}
 
 my $KATY_LIED_ID = "Awif2zfjhehpk";
-
 my $KatyLied = {
     'CREDITS' => [
     {
@@ -284,6 +301,10 @@ for (my $i=0; $i<scalar @{$results->{ "TRACKS" }}; $i++) {
 }
 
 # FIXME - Need test for credits
+
+sub DESTROY
+{
+}
 
 exit 0;
 
