@@ -232,7 +232,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = "0.06";
+$VERSION = "0.07";
 
 use strict;
 use Carp;
@@ -639,13 +639,17 @@ sub parse_artist_page
 
     # inserted by DG - finds artist bio
     my $elem = $tb->look_down("_tag","div","id","artbio");
-    my $elem_val = strip($elem->as_text());
-    $artist->{ "BIO" } = $elem_val;
-
+    if ($elem) {
+        my $elem_val = strip($elem->as_text());
+        $artist->{ "BIO" } = $elem_val;
+    }
+    
     # inserted by DG - finds artist pic
     $elem = $tb->look_down("_tag","img","name","artistpic");
-    my $url = $elem->attr("src");
-    $artist->{ "IMAGE_URL" } = $url;
+    if ($elem) {
+        my $url = $elem->attr("src");
+        $artist->{ "IMAGE_URL" } = $url;
+    }
 
     $self->progress("ok\n"); # done parsing artist info
 
@@ -1319,10 +1323,12 @@ sub parse_album_cover
 
     #inserted by DG - returns album review
     my $album_review = strip($review_table->as_text());
-    $album_review =~ s/\&mdash\;(.*)$//;
-    my $reviewer = $1;
-    $album->{ "REVIEWER" } = strip($reviewer);
-    $album->{ "REVIEW" } = $album_review;
+    if ($album_review) {
+        $album_review =~ s/\&mdash\;(.*)$//;
+        my $reviewer = $1;
+        $album->{ "REVIEW" } = $album_review;
+        $album->{ "REVIEWER" } = strip($reviewer) if ($reviewer);
+    }
 
     my $album_img = $review_table->look_down("_tag", "img",
                                              sub { $_[0]->attr("width") > 100 });

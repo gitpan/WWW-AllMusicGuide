@@ -248,8 +248,8 @@ my $KatyLied = {
     }
   ],
   'AMG_RATING' => '5',
-  'INPRINT' => 1,
-  'MARC_ID' => 'V18946',
+  'INPRINT' => 0,
+  'MARC_ID' => undef,
   'STYLES' => [
     'Soft Rock',
     'Pop/Rock',
