@@ -194,7 +194,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = "0.01";
+$VERSION = "0.02";
 
 use strict;
 use Carp;
@@ -203,6 +203,7 @@ use File::Path;
 use File::Spec;
 use Data::Dumper;
 use HTML::TreeBuilder;
+use LWP::Simple;
 use HTTP::Request;
 use HTTP::Response;
 
@@ -317,7 +318,9 @@ sub new
     my $progress_fh    = $params{ '-progress'     };
     my $cache_dir      = $params{ '-cache_dir'    };
     my $expire_cache   = $params{ '-expire_cache' };
-
+    my $save_covers    = $params{ '-save_covers'  };
+    my $dump_flags     = $params{ '-dump'         };
+    
     my $browser = new Browser(-log          => $browser_log_fn,
                               -agent        => $agent_str,
                               -cache_dir    => $cache_dir,
@@ -328,7 +331,14 @@ sub new
     my $self = { 'browser'      => $browser,
                  'amg_base_url' => $url,
                  'progress_fh'  => $progress_fh,
-               };
+                 'save_covers'  => $save_covers,
+             };
+
+    if (ref($dump_flags) eq "ARRAY") {
+        $self->{ "dump_flags" } = { map { $_, 1 } @{$dump_flags} };
+    } elsif ($dump_flags) {
+        $self->{ "dump_flags" } = { map { $_, 1 } split(/\s*,\s*/, $dump_flags) };
+    }
 
     bless $self, $class;
 
@@ -474,7 +484,7 @@ sub parse_artist_page
 
     my $artist = {};
 
-    my $tb = $self->new_tree_builder($html, $dump);
+    my $tb = $self->new_tree_builder($html, $self->dump( "artists" ));
 
     my @elem_keys = $tb->look_down('_tag', 'td',
                                    'class', 'co3');
@@ -583,14 +593,13 @@ sub parse_album_page
 {
     my ($self, %params) = @_;
 
-    my $html = $params{ '-html' };
-    my $dump = $params{ '-dump' };
+    my $html = $params{ "-html" };
 
     $self->progress("parsing album info...");
 
     my $album = {};
 
-    my $tb = $self->new_tree_builder($html, $dump);
+    my $tb = $self->new_tree_builder($html, $self->dump( "albums" ));
 
     my @elem_keys = $tb->look_down('_tag', 'td',
                                    'class', 'co3');
@@ -653,6 +662,7 @@ sub parse_album_page
 
     $self->parse_album_tracks($tb, $album);
     $self->parse_album_credits($tb, $album);
+    $self->parse_album_cover($tb, $album);
 
     return $album;
 }
@@ -1084,6 +1094,45 @@ sub analyze_artist_search_results
 }
 
 
+sub parse_album_cover
+{
+    my ($self, $tb, $album) = @_;
+
+    my $review_table = $tb->look_down('_tag', 'table',
+                                      'class', 'ft3');
+
+    return if (!$review_table);
+
+    my $album_img = $review_table->look_down('_tag', 'img',
+                                             sub { $_[0]->attr('width') > 100 });
+
+    return if (!$album_img);
+
+    my $cover_url = $album_img->attr('src');
+
+    my ($extension) = ($cover_url =~ m/\.([^.]+)$/);
+
+    $album->{ "COVER_URL" } = $cover_url;
+
+    my $cover_filename = "$album->{ ARTIST } $album->{ ALBUM_TITLE }.$extension";
+    $cover_filename =~ s/[\'()\"]//g;
+    $cover_filename =~ s/\s/-/g;
+
+    $self->progress("saving album cover $cover_filename...");
+
+    my $response_code = getstore( $cover_url, $cover_filename);
+
+    if ( HTTP::Response->new($response_code)->is_success ) {
+        $album->{ "COVER_FILE" } = $cover_filename;
+        $self->progress("ok\n");
+    } else {
+        $self->progress("failed\n");
+    }
+
+    return if (!$self->save_covers);
+}
+
+
 sub navigate_amg_home
 {
     my ($self) = @_;
@@ -1143,10 +1192,20 @@ sub make_amg_url
 }
 
 
+sub dump            
+{
+    my ($self, $flag_name) = @_;
+    if (exists($self->{ "dump_flags" }{ $flag_name })) {
+        return $self->{ "dump_flags" }{ $flag_name };
+    } else {
+        return undef;
+    }
+}
 
-sub browser         { $_[0]->{ 'browser'      }}
-sub amg_base_url    { $_[0]->{ 'amg_base_url' }}
-sub progress_fh     { $_[0]->{ 'progress_fh'  }}
+sub save_covers   { $_[0]->{ 'save_covers' }};
+sub browser       { $_[0]->{ 'browser'      }}
+sub amg_base_url  { $_[0]->{ 'amg_base_url' }}
+sub progress_fh   { $_[0]->{ 'progress_fh'  }}
 
 
 sub cleanstr
