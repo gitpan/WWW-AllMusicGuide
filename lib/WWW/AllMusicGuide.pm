@@ -194,7 +194,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = "0.02";
+$VERSION = "0.03";
 
 use strict;
 use Carp;
@@ -957,6 +957,17 @@ END
                                              'class', $TRACK_LIST_ROW_CLASS)) {
         my @cells = $table_row->look_down('_tag', 'td');
         next if (@cells < 5);
+        
+        if (@cells > 6) {
+            $table_row = $table_row->look_down('_tag', 'td')->look_down('_tag', 'tr');
+            @cells = $table_row->look_down('_tag', 'td');
+        }
+        
+        # XXX: DEBUG
+        # print "CELLS is ",scalar @cells,"\n";
+        # print $table_row->as_HTML(undef, "\t"),"-"x78,"\n";
+
+        splice(@cells,2,1) if @cells == 6; # kill extra spacer
 
         my $track = {};
 
@@ -966,6 +977,8 @@ END
         if ($cell->as_text() =~ m/review/i) {
             my $link = $cell->look_down('_tag', 'a');
             $track->{ 'REVIEW_ID' } = extract_object_id($link->attr('href'));
+        } else { # maybe pick/nopick
+            $self->parse_images($cell, $track);
         }
 
         # Second cell - AMG Pick

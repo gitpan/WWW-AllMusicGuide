@@ -16,6 +16,7 @@ Options:
   --manual     : Don't automatically select likely matches
   --quiet      : Don't show progress info
   --url        : Use url (default "http://www.allmusic.com")
+  --python     : Output as python data structures
 
   --help       : Show this message
 
@@ -37,7 +38,7 @@ $|=1;
 # PARSE COMMAND LINE ARGUMENTS
 
 my ($opt_album, $opt_artist, $opt_covers, $opt_dump, $opt_help, $opt_id);
-my ($opt_manual, $opt_nocache, $opt_quiet, $opt_url);
+my ($opt_manual, $opt_nocache, $opt_quiet, $opt_python, $opt_save, $opt_url );
 
 GetOptions("album=s"       => \$opt_album,
            "artist=s"      => \$opt_artist,
@@ -47,7 +48,9 @@ GetOptions("album=s"       => \$opt_album,
            "id=s"          => \$opt_id,
            "manual"        => \$opt_manual,
            "nocache"       => \$opt_nocache,
+           "python"        => \$opt_python,
            "quiet"         => \$opt_quiet,
+           "save=s"        => \$opt_save,
            "url=s"         => \$opt_url
           );
 
@@ -122,8 +125,30 @@ if (ref($result) eq "ARRAY") {
     print "Multiple search results found:\n";
 }
 
-$Data::Dumper::Indent = 1;
-print Dumper($result);
+
+if ($opt_python) {
+    die "Outputting as python data structures is not supported yet\n";
+} else {
+    $Data::Dumper::Indent = 1;
+
+    if ($opt_save) {
+        open(SAVEFILE, ">$opt_save") || die "Cannot write to save file $opt_save: $!\n";
+        print SAVEFILE Dumper($result);
+        close(SAVEFILE);
+    } else {
+        print Dumper($result);
+    }
+}
+
+
+sub dump_python
+{
+}
+
+
+sub dump_python_artist
+{
+}
 
 
 sub readfile
