@@ -1,0 +1,53 @@
+This is the README file for WWW::AllMusicGuide
+
+~~~~~ OVERVIEW ~~~~~
+
+The WWW::AllMusicGuide module provides an object that you can use to search 
+the All Music Guide (http://www.allmusic.com).  Currently, you can search 
+for artists and albums.  Artist and album pages are parsed into hash references
+containing the information (e.g. name, year, group members, etc).  This 
+information is useful in writing tools to maintain large collections of MP3
+files, their ID3 tags and metadata.
+
+NOTE: (from the website)
+
+"The All Music Guide is protected by a unique data fingerprinting process to 
+insure that the data and its format can be identified.  This data cannot be
+distributed in any form without the express written permission of the AEC
+One Stop Group, Inc."
+
+~~~~~ DISCLAIMER ~~~~~
+
+NOTE: This is ALPHA software.  The interfaces might possibly change as 
+requirements firm up.  If you comments, suggestions, or patches please
+let me know at moe AT hendawi DOT com.
+
+~~~~~ REQUIREMENTS ~~~~~
+
+    * Build, test and install Perl 5 (at least version 5.004).
+    * HTML::TreeBuilder
+    * File::Spec
+    * Data::Dumper
+    * libwww-perl
+    
+~~~~~ BUILDING ~~~~~
+
+Building the WWW::AllMusicGuide package is as usual for any typical Perl
+module:
+
+    perl Makefile.PL
+    make
+    make install
+
+~~~~~ TESTING ~~~~~
+
+There is a test program called "amg.pl" in the bin/ subdirectory.  You
+should be able to run it without installing anything just to get a feel
+for what can be done.  
+
+~~~~~ NOTES ~~~~~
+
+I have not tested this on any platform other than Linux.  Please let me
+know if there is something I can change to improve the portability to
+other platforms.  Thanks.
+

@@ -1,0 +1,5 @@
+MANIFEST
+Makefile.PL
+README
+lib/WWW/AllMusicGuide.pm
+bin/amg.pl
