@@ -3,3 +3,5 @@ Makefile.PL
 README
 lib/WWW/AllMusicGuide.pm
 bin/amg.pl
+t/KatyLied.t
+t/testlib/Test/Tools.pm

@@ -1,6 +1,6 @@
 =head1 NAME
 
-WWW::AllMusicGuide - An object to search the All Music Guide (www.allmusic.com)
+WWW::AllMusicGuide - A Perl module to search the All Music Guide (www.allmusic.com)
 
 =head1 SYNOPSIS
 
@@ -194,7 +194,7 @@ require Exporter;
 @EXPORT    = qw();
 @EXPORT_OK = qw();
 
-$VERSION = "0.03";
+$VERSION = "0.04";
 
 use strict;
 use Carp;
@@ -207,6 +207,8 @@ use LWP::Simple;
 use HTTP::Request;
 use HTTP::Response;
 
+my $AMG_IMG_PATH = "/i";
+
 # ----- ALBUM PAGE -----------------------------------------------------------
 #
 # The following defines are used in parsing the AMG album page.
@@ -214,14 +216,14 @@ use HTTP::Response;
 # $TRACKS_IMG - "Songs/Tracks" image that identifies table containing tracks
 # $TRACK_LIST_ROW_CLASS - Rows of table containing tracks have this class.
 
-my $TRACKS_IMG = '/img/htrk1.gif';
-my $TRACK_LIST_ROW_CLASS = 'co1';
+my $TRACKS_IMG = "$AMG_IMG_PATH/htrk1.gif";
+my $TRACK_LIST_ROW_CLASS = "co1";
 
 # $CREDITS_IMG - "Credits" images that identifies table containing credits
 # $CREDITS_ROW_CLASS - Rows of table containing album credits have this class.
 
-my $CREDITS_IMG       = '/img/hcred1.gif';
-my $CREDITS_ROW_CLASS = 'co1';
+my $CREDITS_IMG       = "$AMG_IMG_PATH/hcred1.gif";
+my $CREDITS_ROW_CLASS = "co1";
 
 # ----- ALBUM SEARCH RESULTS -------------------------------------------------
 #
@@ -229,9 +231,9 @@ my $CREDITS_ROW_CLASS = 'co1';
 # cell that has $ALBUM_RESULTS_HEADER_BG as a background and 
 # $ALBUM_RESULTS_SENTINEL as text content.
 
-my $ALBUM_RESULTS_HEADER_BG = '/img/bgr02.gif';
-my $ALBUM_RESULTS_SENTINEL  = 'AMG Rating';
-my $ALBUM_RESULTS_ROW_CLASS = 'co1';
+my $ALBUM_RESULTS_HEADER_BG = "$AMG_IMG_PATH/bgr02.gif";
+my $ALBUM_RESULTS_SENTINEL  = "AMG Rating";
+my $ALBUM_RESULTS_ROW_CLASS = "co1";
 
 # ----- ARTIST SEARCH RESULTS -------------------------------------------------
 #
@@ -241,43 +243,43 @@ my $ALBUM_RESULTS_ROW_CLASS = 'co1';
 # indicates the class of rows that indicate a "likely match" as determined
 # by the AMG search engine.
 
-my $ARTIST_RESULTS_HEADER_BG    = '/img/bgr02.gif';
-my $ARTIST_RESULTS_SENTINEL     = 'NAMES STARTING WITH';
-my $ARTIST_RESULTS_LIKELY_CLASS = 'co4';
+my $ARTIST_RESULTS_HEADER_BG    = "$AMG_IMG_PATH/bgr02.gif";
+my $ARTIST_RESULTS_SENTINEL     = "artists with names like";
+my $ARTIST_RESULTS_LIKELY_CLASS = "co4";
+my $ARTIST_RESULTS_HIGHLIGHTED_COLOR = "#CEC5A3";
 
+my $FEATURED_ALBUMS_BG = "$AMG_IMG_PATH/bgr01.jpg";
+my $SEARCH_BUTTON_IMG  = "img/mus_3.gif";
+my $DISCO_ALBUMS_IMG   = "$AMG_IMG_PATH/hdisc11.gif";
+my $DISCO_COMPS_IMG    = "$AMG_IMG_PATH/hdisc21.gif";
+my $DISCO_EPS_IMG      = "$AMG_IMG_PATH/hdisc31.gif";
+my $DISCO_BOOTLEGS_IMG = "$AMG_IMG_PATH/hdisc41.gif";
+my $NOT_AMG_PICK_IMG   = "$AMG_IMG_PATH/nopick.gif";
+my $YES_AMG_PICK_IMG   = "$AMG_IMG_PATH/pick.gif";
+my $RATING_0           = "$AMG_IMG_PATH/rt0.gif";
+my $RATING_0a          = "$AMG_IMG_PATH/st_r0.gif";
+my $RATING_1           = "$AMG_IMG_PATH/rt1.gif";
+my $RATING_1a          = "$AMG_IMG_PATH/st_r1.gif";
+my $RATING_2           = "$AMG_IMG_PATH/rt2.gif";
+my $RATING_2a          = "$AMG_IMG_PATH/st_r2.gif";
+my $RATING_3           = "$AMG_IMG_PATH/rt3.gif";
+my $RATING_3a          = "$AMG_IMG_PATH/st_r3.gif";
+my $RATING_4           = "$AMG_IMG_PATH/rt4.gif";
+my $RATING_4a          = "$AMG_IMG_PATH/st_r4.gif";
+my $RATING_5           = "$AMG_IMG_PATH/rt5.gif";
+my $RATING_5a          = "$AMG_IMG_PATH/st_r5.gif";
+my $RATING_6           = "$AMG_IMG_PATH/rt6.gif";
+my $RATING_6a          = "$AMG_IMG_PATH/st_r6.gif";
+my $RATING_7           = "$AMG_IMG_PATH/rt7.gif";
+my $RATING_7a          = "$AMG_IMG_PATH/st_r7.gif";
+my $RATING_8           = "$AMG_IMG_PATH/rt8.gif";
+my $RATING_8a          = "$AMG_IMG_PATH/st_r8.gif";
+my $RATING_9           = "$AMG_IMG_PATH/rt9.gif";
+my $RATING_9a          = "$AMG_IMG_PATH/st_r9.gif";
 
-my $FEATURED_ALBUMS_BG = '/img/bgr01.jpg';
-my $SEARCH_BUTTON_IMG  = 'img/mus_3.gif';
-my $DISCO_ALBUMS_IMG   = '/img/hdisc11.gif';
-my $DISCO_COMPS_IMG    = '/img/hdisc21.gif';
-my $DISCO_EPS_IMG      = '/img/hdisc31.gif';
-my $DISCO_BOOTLEGS_IMG = '/img/hdisc41.gif';
-my $NOT_AMG_PICK_IMG   = '/img/nopick.gif';
-my $YES_AMG_PICK_IMG   = '/img/pick.gif';
-my $RATING_0           = '/img/rt0.gif';
-my $RATING_0a          = '/img/st_r0.gif';
-my $RATING_1           = '/img/rt1.gif';
-my $RATING_1a          = '/img/st_r1.gif';
-my $RATING_2           = '/img/rt2.gif';
-my $RATING_2a          = '/img/st_r2.gif';
-my $RATING_3           = '/img/rt3.gif';
-my $RATING_3a          = '/img/st_r3.gif';
-my $RATING_4           = '/img/rt4.gif';
-my $RATING_4a          = '/img/st_r4.gif';
-my $RATING_5           = '/img/rt5.gif';
-my $RATING_5a          = '/img/st_r5.gif';
-my $RATING_6           = '/img/rt6.gif';
-my $RATING_6a          = '/img/st_r6.gif';
-my $RATING_7           = '/img/rt7.gif';
-my $RATING_7a          = '/img/st_r7.gif';
-my $RATING_8           = '/img/rt8.gif';
-my $RATING_8a          = '/img/st_r8.gif';
-my $RATING_9           = '/img/rt9.gif';
-my $RATING_9a          = '/img/st_r9.gif';
-
-my $NOT_IN_PRINT_IMG   = '/img/av0.gif';
-my $IN_PRINT_IMG       = '/img/av1.gif';
-my $MORE_INFO_IMG      = '/img/continue2.jpg';
+my $NOT_IN_PRINT_IMG   = "$AMG_IMG_PATH/av0.gif";
+my $IN_PRINT_IMG       = "$AMG_IMG_PATH/av1.gif";
+my $MORE_INFO_IMG      = "$AMG_IMG_PATH/continue2.jpg";
 
 
 my %Images = ( $NOT_AMG_PICK_IMG => [ "AMG_PICK", 0 ],
@@ -312,27 +314,28 @@ sub new
 {
     my ($class, %params) = @_;
 
-    my $browser_log_fn = $params{ '-browser_log'  };
-    my $agent_str      = $params{ '-agent'        } || $Def_Agent_Str;
-    my $url            = $params{ '-url'          } || "http://www.allmusic.com";
-    my $progress_fh    = $params{ '-progress'     };
-    my $cache_dir      = $params{ '-cache_dir'    };
-    my $expire_cache   = $params{ '-expire_cache' };
-    my $save_covers    = $params{ '-save_covers'  };
-    my $dump_flags     = $params{ '-dump'         };
-    
+    my $browser_log_fn = $params{ "-browser_log"  };
+    my $agent_str      = $params{ "-agent"        } || $Def_Agent_Str;
+    my $url            = $params{ "-url"          } || "http://www.allmusic.com";
+    my $progress_fn    = $params{ "-progress"     };
+    my $cache_dir      = $params{ "-cache_dir"    };
+    my $expire_cache   = $params{ "-expire_cache" };
+    my $save_covers    = $params{ "-save_covers"  };
+    my $dump_flags     = $params{ "-dump"         };
+    my $croak_on_error = $params{ "-croak"        };
+
     my $browser = new Browser(-log          => $browser_log_fn,
                               -agent        => $agent_str,
                               -cache_dir    => $cache_dir,
                               -expire_cache => $expire_cache,
-                              -progress     => $progress_fh,
-                              );
+                              -progress     => $progress_fn);
 
-    my $self = { 'browser'      => $browser,
-                 'amg_base_url' => $url,
-                 'progress_fh'  => $progress_fh,
-                 'save_covers'  => $save_covers,
-             };
+    my $self = { "browser"        => $browser,
+                 "amg_base_url"   => $url,
+                 "progress"       => $progress_fn,
+                 "save_covers"    => $save_covers,
+                 "croak_on_error" => $croak_on_error
+               };
 
     if (ref($dump_flags) eq "ARRAY") {
         $self->{ "dump_flags" } = { map { $_, 1 } @{$dump_flags} };
@@ -342,6 +345,16 @@ sub new
 
     bless $self, $class;
 
+    if ($self->dump("replies")) {
+        $browser->{ "dump_replies" } = $progress_fn;
+    }
+
+    # Turn on autoflush for progress filehandles
+
+    if (ref($progress_fn) && (ref($progress_fn) ne "CODE")) {
+        select((select($progress_fn), $|=1)[0]);
+    }
+
     return $self;
 }
 
@@ -350,9 +363,9 @@ sub search_artist
 {
     my ($self, %params) = @_;
 
-    my $name = $params{ '-name' };
-    my $id   = $params{ '-id'   };
-    my $auto = $params{ '-auto' };
+    my $name = $params{ "-name" };
+    my $id   = $params{ "-id"   };
+    my $auto = $params{ "-auto" };
 
     if (!$name && !$id) {
         croak "Must specify one of -name or -id\n";
@@ -366,7 +379,7 @@ sub search_artist
         $self->navigate_amg_home();
 
         $self->progress("Searching for artist...");
-        $browser->fillin('sql', $name);
+        $browser->fillin("sql", $name);
         $response = $browser->press(-src => $SEARCH_BUTTON_IMG);
         $self->progress("ok\n");
 
@@ -375,8 +388,6 @@ sub search_artist
         $response = $self->navigate_to_object_page($id, "Loading artist page");
 
     }
-
-#    $browser->tree->dump();
 
     my $search_results = $self->parse_artist_search_results(-tree => $browser->tree);
 
@@ -391,7 +402,10 @@ sub search_artist
 
         if ($result && $auto) {
             if (@$search_results > 1) {
-                $self->progress("Automatically selecting likely match.\n");
+                $self->progress("Automatically selecting likely match:\n",
+                                "  ARTIST : $result->{ ARTIST }\n",
+                                "  GENRE  : $result->{ GENRE  }\n",
+                                "  DECADES: $result->{ DECADES }\n");
             }
             $response = $self->navigate_to_object_page($result->{ "ARTIST_ID" },
                                                       "Loading artist page");
@@ -404,12 +418,12 @@ sub search_artist
     # link to "read more", it means that some of the data for the artist is not
     # displayed.  Follow that link so we get all the data.
 
-    my $more_info_img = $browser->tree->look_down('_tag', 'img',
-                                                  'src',  $MORE_INFO_IMG);
+    my $more_info_img = $browser->tree->look_down("_tag", "img",
+                                                  "src",  $MORE_INFO_IMG);
     if ($more_info_img) {
-        my $link = $more_info_img->look_up('_tag', 'a');
+        my $link = $more_info_img->look_up("_tag", "a");
         if ($link) {
-            my $artist_id = extract_object_id($link->attr('href'));
+            my $artist_id = extract_object_id($link->attr("href"));
             if ($artist_id !~ m/^R/) {
                 $response = $self->navigate_to_object_page($artist_id,
                                                            "Getting complete artist info");
@@ -431,8 +445,8 @@ sub search_album
 {
     my ($self, %params) = @_;
 
-    my $name = $params{ '-name' };
-    my $id   = $params{ '-id'   };
+    my $name = $params{ "-name" };
+    my $id   = $params{ "-id"   };
 
     if (!$name && !$id) {
         croak "Must specify one of -name or -id\n";
@@ -446,7 +460,7 @@ sub search_album
         $self->navigate_amg_home();
 
         $self->progress("searching for album...");
-        $browser->fillin('sql', $name);
+        $browser->fillin("sql", $name);
 
         $browser->set_radio_button("opt1", 2);
 
@@ -477,17 +491,17 @@ sub parse_artist_page
 {
     my ($self, %params) = @_;
 
-    my $html = $params{ '-html' };
-    my $dump = $params{ '-dump' };
+    my $html = $params{ "-html" };
+    my $dump = $params{ "-dump" };
 
     $self->progress("Parsing artist info...");
 
     my $artist = {};
 
-    my $tb = $self->new_tree_builder($html, $self->dump( "artists" ));
+    my $tb = $self->new_tree_builder($html);
 
-    my @elem_keys = $tb->look_down('_tag', 'td',
-                                   'class', 'co3');
+    my @elem_keys = $tb->look_down("_tag", "td",
+                                   "class", "co3");
 
     foreach my $elem_key (@elem_keys) {
         my $elem_val = $elem_key->right();
@@ -532,10 +546,10 @@ sub parse_artist_page
 
         } elsif ($key =~ m/years active/i) {
 
-            my @images = $elem_val->look_down('_tag', 'img');
+            my @images = $elem_val->look_down("_tag", "img");
             my @decades;
             foreach my $img (@images) {
-                if ($img->attr('src') =~ m/dec(\d)x.gif/i) {
+                if ($img->attr("src") =~ m/dec(\d)x.gif/i) {
                     push @decades, "${1}0s";
                 }
             }
@@ -544,12 +558,12 @@ sub parse_artist_page
 
         } elsif ($key =~ m/group members/i) {
 
-            my @links = $elem_val->look_down('_tag', 'a');
+            my @links = $elem_val->look_down("_tag", "a");
 
             my @members;
             foreach my $link (@links) {
-                push @members, { 'NAME' => $link->as_text(), 
-                                 'ARTIST_ID' => extract_object_id($link->attr('href')) };
+                push @members, { "NAME" => $link->as_text(), 
+                                 "ARTIST_ID" => extract_object_id($link->attr("href")) };
             }
 
             $artist->{ "MEMBERS" } = \@members;
@@ -581,6 +595,10 @@ sub parse_artist_page
 
     # Parsing discography
 
+#    print "="x80, "\n";
+#    print $html;
+#    print "="x80, "\n";
+
     $self->progress("Parsing discography...");
     $self->parse_discography($html, $artist);
     $self->progress("ok\n");
@@ -599,10 +617,10 @@ sub parse_album_page
 
     my $album = {};
 
-    my $tb = $self->new_tree_builder($html, $self->dump( "albums" ));
+    my $tb = $self->new_tree_builder($html);
 
-    my @elem_keys = $tb->look_down('_tag', 'td',
-                                   'class', 'co3');
+    my @elem_keys = $tb->look_down("_tag", "td",
+                                   "class", "co3");
 
     foreach my $elem_key (@elem_keys) {
         my $elem_val = $elem_key->right();
@@ -613,8 +631,8 @@ sub parse_album_page
 
             $album->{ "ARTIST" } = $val;
 
-            if (my $link = $elem_val->look_down('_tag', 'a')) {
-                $album->{ "ARTIST_ID" } = extract_object_id($link->attr('href'));
+            if (my $link = $elem_val->look_down("_tag", "a")) {
+                $album->{ "ARTIST_ID" } = extract_object_id($link->attr("href"));
             }
 
         } elsif ($key =~ m/album title/i) {
@@ -651,9 +669,9 @@ sub parse_album_page
 
         } elsif ($key =~ m/library view/i) {
 
-            my $link = $elem_val->look_down('_tag', 'a');
+            my $link = $elem_val->look_down("_tag", "a");
             if ($link) {
-                $album->{ "MARC_ID" } = extract_object_id($link->attr('href'));
+                $album->{ "MARC_ID" } = extract_object_id($link->attr("href"));
             }
         }
     }
@@ -667,7 +685,6 @@ sub parse_album_page
     return $album;
 }
 
-
 # ==============================================================================
 # PRIVATE METHODS
 # ==============================================================================
@@ -676,43 +693,73 @@ sub parse_artist_search_results
 {
     my ($self, %params) = @_;
 
-    my $tree = $params{ '-tree' } || croak "Must specify -tree\n";
-    my $desired_name = $params{ '-desired_name' };
+    my $tree = $params{ "-tree" } || croak "Must specify -tree\n";
+    my $desired_name = $params{ "-desired_name" };
 
-    my $elem = $tree->look_down('_tag', 'td',
-                                'background', $ARTIST_RESULTS_HEADER_BG,
-                                sub { $_[0]->as_text() =~ /$ARTIST_RESULTS_SENTINEL/ });
+    my $elem = $tree->look_down("_tag", "td",
+                                sub { $_[0]->as_text() =~ /$ARTIST_RESULTS_SENTINEL/i });
+
+    # If we didn't find the $ARTIST_RESULTS_SENTINEL, then we are probably not 
+    # looking at an artist search results page.  The search probably took us
+    # directly to an artist info page.  Just return immediately.
+
+    return [] if (!$elem);
+
+    # Otherwise, we are going to analyze an HTML table containing the search 
+    # results.  
 
     my @search_results;
-    if ($elem) {
-        my $table = $elem->look_up('_tag', 'table');
+    my $table = $elem->look_up("_tag", "table");
 
-        foreach my $table_row ($table->look_down('_tag', 'tr')) {
-            next if ($table_row->as_text() =~ /$ARTIST_RESULTS_SENTINEL/);
+    if ($self->dump("all")) {
+        $self->progress("Dumping rows from search results table.  Verify that\n" . 
+                        "Column 2 = artist name, Column 3 = genre, Column 4 = decades\n");
+    }
 
-            my @cells = $table_row->look_down('_tag', 'td');
-            my ($artist, $genre, $decades) = @cells;
-
-            my $artist_name = strip($artist->as_text());
-            my $link        = $artist->look_down('_tag', 'a');
-            my $artist_id   = extract_object_id($link->attr('href')) if ($link);
-
-            my $record;
-
-            $record->{ 'ARTIST'    } = $artist_name;
-            $record->{ 'ARTIST_ID' } = $artist_id;
-            $record->{ 'GENRE'     } = strip($genre->as_text());
-            $record->{ 'DECADES'   } = strip($decades->as_text());
-
-            $record->{ 'LIKELY_MATCH' } = 
-                ($table_row->attr('class') eq $ARTIST_RESULTS_LIKELY_CLASS) ? 1 : 0;
-
-            if (lc($artist_name) eq lc($desired_name)) {
-                return ( $record );
-            } else {
-                push @search_results, $record;
+    foreach my $table_row ($table->look_down("_tag", "tr")) {
+        next if ($table_row->as_text() =~ /$ARTIST_RESULTS_SENTINEL/);
+        my @cells = $table_row->look_down("_tag", "td");
+        if ($self->dump("all")) {
+            for (my $i=0; $i<@cells; $i++) {
+                print "col $i: ", $cells[$i]->as_text(), "\n";
             }
         }
+
+        next if (@cells < 5);
+
+        my ($match_cell, $spacer, $artist, $genre, $decades) = @cells;
+        
+        my $match_bar_image = $match_cell->look_down("_tag", "img");
+        my $artist_name     = strip($artist->as_text());
+        my $link            = $artist->look_down("_tag", "a");
+        my $artist_id       = extract_object_id($link->attr("href")) if ($link);
+        
+        next if ($artist_name =~ m/^\s*$/);
+        
+        my $record;
+        
+        $record->{ "BARWIDTH"    } = $match_bar_image->attr("width") if ($match_bar_image);
+        $record->{ "ARTIST"      } = $artist_name;
+        $record->{ "ARTIST_ID"   } = $artist_id;
+        $record->{ "GENRE"       } = strip($genre->as_text()) if $genre;
+        $record->{ "DECADES"     } = strip($decades->as_text()) if $decades;
+        $record->{ "HIGHLIGHTED" } = 
+          ($table_row->attr("bgcolor") eq $ARTIST_RESULTS_HIGHLIGHTED_COLOR) ? 1 : 0;
+
+        if ($self->dump("all")) {
+            $self->progress(Dumper($record));
+        }
+        
+        if (lc($artist_name) eq lc($desired_name)) {
+            return [ $record ];
+        } else {
+            push @search_results, $record;
+        }
+    }
+
+    if ($self->dump("all")) {
+        $self->progress("RETURNING ARTIST SEARCH RESULTS\n\n");
+        $self->progress(Dumper(\@search_results));
     }
 
     return \@search_results;
@@ -723,35 +770,35 @@ sub parse_album_search_results
 {
     my ($self, %params) = @_;
 
-    my $tree = $params{ '-tree' } || croak 'Must specify -tree\n';
+    my $tree = $params{ "-tree" } || croak "Must specify -tree\n";
 
-    my $elem = $tree->look_down('_tag', 'th',
-                                'background', $ALBUM_RESULTS_HEADER_BG,
+    my $elem = $tree->look_down("_tag", "th",
+                                "background", $ALBUM_RESULTS_HEADER_BG,
                                 sub { $_[0]->as_text() =~ /$ALBUM_RESULTS_SENTINEL/ });
 
     my @search_results;
     if ($elem) {
-        my $table = $elem->look_up('_tag', 'table');
+        my $table = $elem->look_up("_tag", "table");
 
         my @results;
-        foreach my $table_row ($table->look_down('_tag', 'tr', 
-                                                 'class', $ALBUM_RESULTS_ROW_CLASS)) {
-            my @cells = $table_row->look_down('_tag', 'td');
+        foreach my $table_row ($table->look_down("_tag", "tr", 
+                                                 "class", $ALBUM_RESULTS_ROW_CLASS)) {
+            my @cells = $table_row->look_down("_tag", "td");
             my ($rating, $artist, $title, $year, $genre) = @cells;
 
             my $record;
 
             $self->parse_images($rating, $record);
-            $record->{ 'ARTIST' } = strip($artist->as_text());
-            $record->{ 'ALBUM_TITLE' } = strip($title->as_text());
+            $record->{ "ARTIST" } = strip($artist->as_text());
+            $record->{ "ALBUM_TITLE" } = strip($title->as_text());
 
-            my $link = $title->look_down('_tag', 'a');
+            my $link = $title->look_down("_tag", "a");
             if ($link) {
-                $record->{ 'ALBUM_ID' } = extract_object_id($link->attr('href'));
+                $record->{ "ALBUM_ID" } = extract_object_id($link->attr("href"));
             }
 
-            $record->{ 'YEAR' } = strip($year->as_text());
-            $record->{ 'GENRE' } = strip($genre->as_text());
+            $record->{ "YEAR" } = strip($year->as_text());
+            $record->{ "GENRE" } = strip($genre->as_text());
 
             push @search_results, $record;
         }
@@ -761,7 +808,7 @@ sub parse_album_search_results
 }
 
 
-# Parses the discography on an artist page and sets the 'discography' key
+# Parses the discography on an artist page and sets the "discography" key
 # in the $artist hash that is passed in.  The discography key is a list of
 # of hash references representing albums/discs/singles etc.  Each hash 
 # reference may contain the following keys:
@@ -775,7 +822,7 @@ sub parse_album_search_results
 # IN_PRINT - 
 #
 # Within the artist page HTML, the discography is contained within 4 distinct 
-# sections that I've identified so far - albums, compilations and boxsets, eps 
+# sections that I"ve identified so far - albums, compilations and boxsets, eps 
 # and singles, and bootlegs/videos.  The content for each of these sections is 
 # contained in a table and is preceded by another table containing an image for 
 # each section.  We use these images to identify the sections.  The actual 
@@ -797,10 +844,14 @@ sub parse_discography
     # image and on.
 
     if ($html =~ m/($DISCO_ALBUMS_IMG|$DISCO_COMPS_IMG|$DISCO_EPS_IMG|$DISCO_BOOTLEGS_IMG)/g) {
-        my $begin_disco_tables = rindex($html, '<table', pos($html));
+        my $begin_disco_tables = rindex($html, "<table", pos($html));
         $html = substr($html, $begin_disco_tables);
     } else {
-        $artist->{ 'discography' } = [];
+
+        $self->parse_error( "Could not find image starting discography\n" );
+        $self->progress( "Result will contain an empty discography\n" );
+
+        $artist->{ "discography" } = [];
         return;
     }
 
@@ -808,13 +859,13 @@ sub parse_discography
     # table should contain one of the discography images now.  We look through
     # all the tables, and assemble a list of the discography data tables that
     # we are going to parse.  For each table we are going to parse, store the
-    # the type of table it is (albums,compilations,eps,etc) in the 'DISCO_TYPE'
+    # the type of table it is (albums,compilations,eps,etc) in the "DISCO_TYPE"
     # field so we can use it later on to interpret our parsed data.
 
     my $tb = new HTML::TreeBuilder();
     $tb->parse($html);
 
-    my @tables = $tb->look_down('_tag', 'table');
+    my @tables = $tb->look_down("_tag", "table");
     my @tables_to_parse;
 
     my @DISCO_TYPES = ( $DISCO_ALBUMS_IMG, $DISCO_COMPS_IMG, $DISCO_EPS_IMG, $DISCO_BOOTLEGS_IMG);
@@ -824,19 +875,19 @@ sub parse_discography
         $table = shift @tables;
 
         foreach my $disco_type (@DISCO_TYPES) {
-            if ($table->look_down('_tag', 'img', 'src', $disco_type)) {
+            if ($table->look_down("_tag", "img", "src", $disco_type)) {
                 $table = shift @tables;
 
                 # Sometimes the albums list will be preceded by another table
                 # containing album cover links to featured albums.  We ignore
-                # this table if we recognize it by it's table background.
+                # this table if we recognize it by it"s table background.
 
                 if (($disco_type eq $DISCO_ALBUMS_IMG) && 
-                    ($table->attr('background') eq $FEATURED_ALBUMS_BG)) {
+                    ($table->attr("background") eq $FEATURED_ALBUMS_BG)) {
                     $table = shift @tables;
                 }
 
-                $table->{ 'DISCO_TYPE' } = $disco_type;
+                $table->{ "DISCO_TYPE" } = $disco_type;
                 push @tables_to_parse, $table;
                 last;
             }
@@ -844,15 +895,15 @@ sub parse_discography
     }
 
     # Now loop through tables and parse out the data, adding records
-    # to the array @discography.  At the end of the process we'll have all
+    # to the array @discography.  At the end of the process we"ll have all
     # of the discography data parsed 
 
     my @discography;
     foreach my $table (@tables_to_parse) {
-        my $disco_type = $table->{ 'DISCO_TYPE' };
+        my $disco_type = $table->{ "DISCO_TYPE" };
 
-        foreach my $table_row ($table->look_down('_tag', 'tr')) {
-            my @cells = $table_row->look_down('_tag', 'td');
+        foreach my $table_row ($table->look_down("_tag", "tr")) {
+            my @cells = $table_row->look_down("_tag", "td");
             next if (@cells < 5);
 
             my $record = {};
@@ -866,15 +917,15 @@ sub parse_discography
 
             $cell = shift @cells;
             $self->parse_images($cell, $record);
-            $record->{ 'YEAR' } = strip($cell->as_text());
+            $record->{ "YEAR" } = strip($cell->as_text());
 
             # Third cell - Album title, link
 
             $cell = shift @cells;
-            my $link = $cell->look_down('_tag', 'a');
+            my $link = $cell->look_down("_tag", "a");
             if ($link) {
-                $record->{ 'TITLE'    } = $link->as_text();
-                $record->{ 'ALBUM_ID' } = extract_object_id($link->attr('href'));
+                $record->{ "TITLE"    } = $link->as_text();
+                $record->{ "ALBUM_ID" } = extract_object_id($link->attr("href"));
             }
 
             # Fourth cell - BUY from CDNOW link (IGNORE THIS)
@@ -883,7 +934,7 @@ sub parse_discography
             # Fifth cell - Label
 
             $cell = shift @cells;
-            $record->{ 'LABEL' } = strip($cell->as_text());
+            $record->{ "LABEL" } = strip($cell->as_text());
 
             # Sixth cell - (optional) type (e.g. album, single, ep, box set, etc)
 
@@ -893,28 +944,28 @@ sub parse_discography
                 my $amg_type = strip($cell->as_text());
 
                 if ($disco_type eq $DISCO_COMPS_IMG) {
-                    if ($amg_type eq 'x') {
-                        $record->{ 'TYPE' } = 'boxset';
+                    if ($amg_type eq "x") {
+                        $record->{ "TYPE" } = "boxset";
                     } elsif (!$amg_type) {
-                        $record->{ 'TYPE' } = 'compilation';
+                        $record->{ "TYPE" } = "compilation";
                     }
                 } elsif ($disco_type eq $DISCO_EPS_IMG) {
                     if (!$amg_type) {
-                        $record->{ 'TYPE' } = 'ep';
-                    } elsif ($amg_type eq 's') {
-                        $record->{ 'TYPE' } = 'single';
+                        $record->{ "TYPE" } = "ep";
+                    } elsif ($amg_type eq "s") {
+                        $record->{ "TYPE" } = "single";
                     }
                 } elsif ($disco_type eq $DISCO_BOOTLEGS_IMG) {
-                    if ($amg_type eq 'b' || !$amg_type) {
-                        $record->{ 'TYPE' } = 'bootleg';
-                    } elsif ($amg_type eq 'v') {
-                        $record->{ 'TYPE' } = 'video';
+                    if ($amg_type eq "b" || !$amg_type) {
+                        $record->{ "TYPE" } = "bootleg";
+                    } elsif ($amg_type eq "v") {
+                        $record->{ "TYPE" } = "video";
                     }
                 } elsif ($disco_type eq $DISCO_ALBUMS_IMG) {
-                    $record->{ 'TYPE' } = 'album';
+                    $record->{ "TYPE" } = "album";
                 }
             } else {
-                $record->{ 'TYPE' } = 'album';
+                $record->{ "TYPE" } = "album";
 
             }
 
@@ -922,21 +973,56 @@ sub parse_discography
         }
     }
 
-    $artist->{ 'DISCOGRAPHY' } = \@discography;
+    $artist->{ "DISCOGRAPHY" } = \@discography;
 
 }
 
+
+# Figure out which column contains what
+=pod
+
+sub analyze_album_tracks_columns
+{
+    my ($self, $table) = @_;
+
+    foreach my $table_row ($table->look_down("_tag", "tr", 
+                                             "class", $TRACK_LIST_ROW_CLASS)) {
+        my @cells = $table_row->look_down("_tag", "td");
+        next if (@cells < 5);
+        
+        if (@cells > 6) {
+            $table_row = $table_row->look_down("_tag", "td")->look_down("_tag", "tr");
+            @cells = $table_row->look_down("_tag", "td");
+        }
+
+        for (my $i=0; $i<@cells; $i++) {
+            my $cell = $cells[$i];
+
+            if ($cell->as_text() =~ m/review/i) {
+            my $link = $cell->look_down("_tag", "a");
+            $track->{ "REVIEW_ID" } = extract_object_id($link->attr("href"));
+        } else { # maybe pick/nopick
+            $self->parse_images($cell, $track);
+        }
+
+        
+        
+    
+
+}
+
+=cut
 
 sub parse_album_tracks
 {
     my ($self, $tb, $album) = @_;
 
-    my $img = $tb->look_down('_tag', 'img',
-                             'src', $TRACKS_IMG);
+    my $img = $tb->look_down("_tag", "img",
+                             "src", $TRACKS_IMG);
 
     return unless ($img);
 
-    my $table = $img->look_up('_tag', 'table');
+    my $table = $img->look_up("_tag", "table");
 
     if (!$table) {
 
@@ -952,69 +1038,77 @@ END
 
     }
 
+#    my %columns = $self->analyze_album_tracks_table($table);
+
     my @tracks;
-    foreach my $table_row ($table->look_down('_tag', 'tr', 
-                                             'class', $TRACK_LIST_ROW_CLASS)) {
-        my @cells = $table_row->look_down('_tag', 'td');
+    foreach my $table_row ($table->look_down("_tag", "tr", 
+                                             "class", $TRACK_LIST_ROW_CLASS)) {
+        my @cells = $table_row->look_down("_tag", "td");
         next if (@cells < 5);
         
         if (@cells > 6) {
-            $table_row = $table_row->look_down('_tag', 'td')->look_down('_tag', 'tr');
-            @cells = $table_row->look_down('_tag', 'td');
+            $table_row = $table_row->look_down("_tag", "td")->look_down("_tag", "tr");
+            @cells = $table_row->look_down("_tag", "td");
         }
-        
-        # XXX: DEBUG
-        # print "CELLS is ",scalar @cells,"\n";
-        # print $table_row->as_HTML(undef, "\t"),"-"x78,"\n";
 
-        splice(@cells,2,1) if @cells == 6; # kill extra spacer
+        # Debugging 
+
+        if ($self->dump("all")) {
+            for (my $i=0; $i<@cells; $i++) {
+                my $cell = $cells[$i];
+                my $text = $cell->as_text();
+                print "col $i: $text\n";
+            }
+        }
 
         my $track = {};
 
-        # First cell - Link to AMG review
+        # Get track number
 
-        my $cell = shift @cells;
-        if ($cell->as_text() =~ m/review/i) {
-            my $link = $cell->look_down('_tag', 'a');
-            $track->{ 'REVIEW_ID' } = extract_object_id($link->attr('href'));
-        } else { # maybe pick/nopick
-            $self->parse_images($cell, $track);
+        my $i=0;
+        for ($i=0; $i<@cells; $i++) {
+            my $cell = $cells[$i];
+            if ($cell->as_text() =~ m/(\d+)\./) {
+                $track->{ "NUMBER" } = $1;
+                last;
+            }
         }
 
-        # Second cell - AMG Pick
+        # Get track name, credit, length
 
-        $cell = shift @cells;
-        $self->parse_images($cell, $track);
+        for (; $i<@cells; $i++) {
+            my $cell = $cells[$i];
+            next if ($cell->as_text =~ m/^\s*$/);
 
-        # Third cell - Track Number
+            my $trackinfo = strip($cell->as_text());
+            if ($trackinfo =~ s/\s*-?\s*(\d\d?:\d\d)//) {
+                $track->{ "LENGTH" } = $1;
+            }
 
-        $cell = shift @cells;
-        if ($cell->as_text() =~ m/(\d+)\./) {
-            $track->{ 'NUMBER' } = $1;
+            if ($trackinfo =~ s/(.*)\(([^\)]+)\)//) {
+                $track->{ "CREDIT" } = $2;
+                $trackinfo = $1;
+            }
+
+            $track->{ "NAME" } = strip($trackinfo);
         }
 
-        # Fourth cell - IGNORE (spacer??)
-        $cell = shift @cells;
+        # Get link to review
 
-        # Fifth cell - Label
-
-        $cell = shift @cells;
-        my $trackinfo = strip($cell->as_text());
-        if ($trackinfo =~ s/\s*-?\s*(\d\d?:\d\d)//) {
-            $track->{ 'LENGTH' } = $1;
+        for (my $i=0; $i<@cells; $i++) {
+            my $cell = $cells[$i];
+            if ($cell->as_text() =~ m/review/i) {
+                my $link = $cell->look_down("_tag", "a");
+                $track->{ "REVIEW_ID" } = extract_object_id($link->attr("href"));
+            } else { # maybe pick/nopick
+                $self->parse_images($cell, $track);
+            }
         }
-
-        if ($trackinfo =~ s/(.*)\(([^\)]+)\)//) {
-            $track->{ 'CREDIT' } = $2;
-            $trackinfo = $1;
-        }
-
-        $track->{ 'NAME' } = strip($trackinfo);
 
         push @tracks, $track;
     }
 
-    $album->{ 'TRACKS' } = \@tracks;
+    $album->{ "TRACKS" } = \@tracks;
 }
 
 
@@ -1022,12 +1116,12 @@ sub parse_album_credits
 {
     my ($self, $tb, $album) = @_;
 
-    my $img = $tb->look_down('_tag', 'img',
-                             'src', $CREDITS_IMG);
+    my $img = $tb->look_down("_tag", "img",
+                             "src", $CREDITS_IMG);
 
     return unless ($img);
 
-    my $table = $img->look_up('_tag', 'table');
+    my $table = $img->look_up("_tag", "table");
 
     if (!$table) {
 
@@ -1045,9 +1139,9 @@ END
 
 
     my @credits;
-    foreach my $table_row ($table->look_down('_tag', 'tr', 
-                                             'class', $CREDITS_ROW_CLASS)) {
-        my @cells = $table_row->look_down('_tag', 'td');
+    foreach my $table_row ($table->look_down("_tag", "tr", 
+                                             "class", $CREDITS_ROW_CLASS)) {
+        my @cells = $table_row->look_down("_tag", "td");
         next if (@cells < 3);
 
         my $record = {};
@@ -1055,12 +1149,12 @@ END
         # First cell - Artist Link
 
         my $cell = shift @cells;
-        my $link = $cell->look_down('_tag', 'a');
+        my $link = $cell->look_down("_tag", "a");
         if ($link) {
-            $record->{ 'ARTIST'    } = strip($link->as_text());
-            $record->{ 'ARTIST_ID' } = extract_object_id($link->attr('href'));
+            $record->{ "ARTIST"    } = strip($link->as_text());
+            $record->{ "ARTIST_ID" } = extract_object_id($link->attr("href"));
         } else {
-            $record->{ 'ARTIST'    } = strip($cell->as_text());
+            $record->{ "ARTIST"    } = strip($cell->as_text());
         }
 
         # Second cell - just a dash - ignore
@@ -1069,12 +1163,12 @@ END
         # Third cell - roles
 
         $cell = shift @cells;
-        $record->{ 'ROLES' } = strip($cell->as_text());
+        $record->{ "ROLES" } = strip($cell->as_text());
 
         push @credits, $record;
     }
 
-    $album->{ 'CREDITS' } = \@credits;    
+    $album->{ "CREDITS" } = \@credits;    
 }
 
 
@@ -1082,57 +1176,54 @@ sub analyze_artist_search_results
 {
     my ($self, %params) = @_;
 
-    my $desired_name   = $params{ '-desired_name'   };
-    my $search_results = $params{ '-search_results' };
+    my $desired_name   = $params{ "-desired_name"   };
+    my $search_results = $params{ "-search_results" };
 
     # If there is only one search result just return it immediately 
     if (@$search_results == 1) {
         return $search_results->[0];
     }
 
-    my $single_likely_match;
     foreach my $result (@$search_results) {
-        if ($result->{ 'LIKELY_MATCH' }) {
-            return $result if (lc($result->{ 'ARTIST' }) eq $desired_name);
-
-            if ($single_likely_match) {
-                $single_likely_match = undef;
-            } else {
-                $single_likely_match = $result;
-            }
+        if ($result->{ "HIGHLIGHTED" } && $result->{ "BARWIDTH" }) {
+            return $result if (lc($result->{ "ARTIST" }) eq lc($desired_name));
         }
     }
 
-    return $single_likely_match;
+    return undef;
 }
 
+
+# Extracts COVER_URL and saves image if specified.
 
 sub parse_album_cover
 {
     my ($self, $tb, $album) = @_;
 
-    my $review_table = $tb->look_down('_tag', 'table',
-                                      'class', 'ft3');
+    my $review_table = $tb->look_down("_tag", "table",
+                                      "class", "ft3");
 
     return if (!$review_table);
 
-    my $album_img = $review_table->look_down('_tag', 'img',
-                                             sub { $_[0]->attr('width') > 100 });
+    my $album_img = $review_table->look_down("_tag", "img",
+                                             sub { $_[0]->attr("width") > 100 });
 
     return if (!$album_img);
 
-    my $cover_url = $album_img->attr('src');
+    my $cover_url = $album_img->attr("src");
 
     my ($extension) = ($cover_url =~ m/\.([^.]+)$/);
-
     $album->{ "COVER_URL" } = $cover_url;
 
-    my $cover_filename = "$album->{ ARTIST } $album->{ ALBUM_TITLE }.$extension";
-    $cover_filename =~ s/[\'()\"]//g;
+    return if (!$self->save_covers);
+
+    my $covers_dir = $self->save_covers;
+    my $cover_filename = "$covers_dir/$album->{ ARTIST } $album->{ ALBUM_TITLE }.$extension";
+
+    $cover_filename =~ s/[\"()\"]//g;
     $cover_filename =~ s/\s/-/g;
 
     $self->progress("saving album cover $cover_filename...");
-
     my $response_code = getstore( $cover_url, $cover_filename);
 
     if ( HTTP::Response->new($response_code)->is_success ) {
@@ -1141,8 +1232,6 @@ sub parse_album_cover
     } else {
         $self->progress("failed\n");
     }
-
-    return if (!$self->save_covers);
 }
 
 
@@ -1177,6 +1266,8 @@ sub extract_object_id
     my ($str) = @_;
     if ($str =~ m/sql=([^&]+)/) {
         return $1;
+    } elsif ($str =~ m/z\(\"([^\"]+)\"/) {
+        return $1;
     } else {
         die "Cannot extract object ID from string $str\n";
     }
@@ -1208,18 +1299,19 @@ sub make_amg_url
 sub dump            
 {
     my ($self, $flag_name) = @_;
-    if (exists($self->{ "dump_flags" }{ $flag_name })) {
-        return $self->{ "dump_flags" }{ $flag_name };
+    if (exists($self->{ "dump_flags" }{ $flag_name }) ||
+        exists($self->{ "dump_flags" }{ "all" })) {
+        return 1;
     } else {
         return undef;
     }
 }
 
-sub save_covers   { $_[0]->{ 'save_covers' }};
-sub browser       { $_[0]->{ 'browser'      }}
-sub amg_base_url  { $_[0]->{ 'amg_base_url' }}
-sub progress_fh   { $_[0]->{ 'progress_fh'  }}
-
+sub save_covers    { $_[0]->{ "save_covers"    }}
+sub browser        { $_[0]->{ "browser"        }}
+sub amg_base_url   { $_[0]->{ "amg_base_url"   }}
+sub progress_fn    { $_[0]->{ "progress"       }}
+sub croak_on_error { $_[0]->{ "croak_on_error" }}
 
 sub cleanstr
 {
@@ -1228,7 +1320,7 @@ sub cleanstr
 	$str =~ s/\s+$//;
 	$str =~ s/^[\r\n]+//;
 	$str =~ s/[\r\n]+$//;
-	my($s) = chr(hex('a0'));
+	my($s) = chr(hex("a0"));
 	$str =~ s/$s//g;
 	return $str;
 }
@@ -1241,7 +1333,7 @@ sub strip
 	$str =~ s/\s+$//;
 	$str =~ s/^[\r\n]+//;
 	$str =~ s/[\r\n]+$//;
-	my($s) = chr(hex('a0'));
+	my($s) = chr(hex("a0"));
 	$str =~ s/$s//g;
     return $str;
 }
@@ -1251,7 +1343,7 @@ sub parse_links_text
 {
     my ($elem) = @_;
 
-    my @links = $elem->look_down('_tag', 'a');
+    my @links = $elem->look_down("_tag", "a");
 
     my @textvals;
     foreach my $link (@links) {
@@ -1267,8 +1359,8 @@ sub parse_images
 {
     my ($self, $element, $record) = @_;
 
-    foreach my $img ($element->look_down('_tag', 'img')) {
-        my $val = $Images{ $img->attr('src') };
+    foreach my $img ($element->look_down("_tag", "img")) {
+        my $val = $Images{ $img->attr("src") };
         if ($val) {
             $record->{ $val->[0] } = $val->[1];
         }
@@ -1279,7 +1371,7 @@ sub parse_images
 sub lookup_object
 {
     my ($self, $object_id) = @_;
-    my $method = 'search_' . $self->identify_object_id($object_id);
+    my $method = "search_" . $self->identify_object_id($object_id);
     my $result = $self->$method(-id => $object_id);
     return $result;
 }
@@ -1287,31 +1379,57 @@ sub lookup_object
 
 sub new_tree_builder
 {
-    my ($self, $html, $dump) = @_;
+    my ($self, $html) = @_;
 
-    $html || croak 'Must specify html argument\n';
+    $html || croak "Must specify html argument\n";
 
     my $tb = new HTML::TreeBuilder();
     $tb->parse($html);
 
-    if ($dump) {
-        if (ref($dump)) {
-            $tb->dump($dump) 
-        } else {
-            $tb->dump();
-        }
+    my $fh = $self->progress_fn || \*STDOUT;
+
+    if ($self->dump("html"))  {
+        print $fh "\n=====[ HTML ]===============================================\n";
+        print $fh $html;
+    }
+
+    if ($self->dump("tree")) {
+        print $fh "\n=====[ TREE ]===============================================\n";
+        $tb->dump($fh);
     }
 
     return $tb;
 }
 
 
+# Notify user of parse error and if -croak is set, croak.
+
+sub parse_error
+{
+    my $self = shift;
+
+    $self->progress( "PARSE ERROR: ", @_ );
+
+    if ( $self->croak_on_error ) {
+        if ( $self->progress_fn ) {
+            die;
+        } else {
+            die "PARSE ERROR: ", @_;
+        }
+    }
+}
+
+
 sub progress
 {
     my $self = shift @_;
-    my $fh = $self->progress_fh;
-    if ($fh) {
-        print $fh @_;
+    my $target = $self->{ "progress" };
+	return if (!$target);
+
+    if (ref($target) eq "CODE") {
+        &$target(@_);
+	} elsif ($target) {
+        print $target @_;
     }
 }
 
@@ -1322,7 +1440,7 @@ sub progress
 # This next module is a Browser object that the AMG object uses internally to
 # access the allmusic site.  It wraps most of the LWP stuff.  The object is
 # not really designed for reuse as of now and so should be pretty much ignored
-# (unless it's broken)
+# (unless it"s broken)
 
 # Subclass LWP::UserAgent to override redirect_ok so we can handle our
 # own redirects
@@ -1330,7 +1448,7 @@ sub progress
 package FormUserAgent;
 use LWP::UserAgent;
 
-no strict 'vars';
+no strict "vars";
 
 @ISA = qw( LWP::UserAgent );
 sub redirect_ok { return 0; };
@@ -1355,7 +1473,7 @@ use Data::Dumper;
 
 $Browser::Def_Num_Attempts = 5;
 $Browser::Def_Retry_Delay  = 2;
-$Browser::Def_Form_Name    = 'form0';
+$Browser::Def_Form_Name    = "form0";
 $Browser::Def_Expire_Cache = 7 * 24 * 60 * 60;   # Specified in seconds
 
 # INPUT TYPES
@@ -1363,54 +1481,58 @@ $Browser::Def_Expire_Cache = 7 * 24 * 60 * 60;   # Specified in seconds
 # Specifies the kinds of form INPUT tags that will be recognized during parsing
 
 my %Input_Types = (
-                   'submit'    => { category => 'buttons' },
-                   'image'     => { category => 'buttons' },
-                   'hidden'    => { category => 'hidden' },
-                   'checkbox'  => { category => 'checkboxes', 
-                                    selected_attr => 'checked' },
-                   'text'      => { category => 'textboxes' },
-                   'textfield' => { category => 'textboxes' },
-                   'password'  => { category => 'textboxes' },
-                   'radio'     => { category => 'radioboxes', 
-                                    selected_attr => 'checked' }
+                   "submit"    => { category => "buttons" },
+                   "image"     => { category => "buttons" },
+                   "hidden"    => { category => "hidden" },
+                   "checkbox"  => { category => "checkboxes", 
+                                    selected_attr => "checked" },
+                   "text"      => { category => "textboxes" },
+                   "textfield" => { category => "textboxes" },
+                   "password"  => { category => "textboxes" },
+                   "radio"     => { category => "radioboxes", 
+                                    selected_attr => "checked" }
                   );
 
 # TAG TYPES
 
-my %Tag_Types = ('select'   => { category => 'selectboxes', 
-                                 selected_attr  => 'selected' },
-                 'textarea' => { category => 'textareas' }
+my %Tag_Types = ("select"   => { category => "selectboxes", 
+                                 selected_attr  => "selected" },
+                 "textarea" => { category => "textareas" }
                 );
 
 
-sub cache_dir       { $_[0]->{ 'cache_dir'    }}
-sub expire_cache    { $_[0]->{ 'expire_cache' }}
-sub caching_enabled { $_[0]->{ 'cache_dir' } ? 1 : 0 }
-sub progress_fh     { $_[0]->{ 'progress_fh'  }}
+sub cache_dir       { $_[0]->{ "cache_dir"    }}
+sub expire_cache    { $_[0]->{ "expire_cache" }}
+sub caching_enabled { $_[0]->{ "cache_dir" } ? 1 : 0 }
+sub progress_fn     { $_[0]->{ "progress_fn"  }}
 
 sub new 
 {
 	my ($class, %params) = @_;
 
-    my $cache_dir    = $params{ "-cache_dir"    };
-    my $expire_cache = $params{ "-expire_cache" } || $Browser::Def_Expire_Cache;
-    my $log_fn       = $params{ "-log"          };
-    my $agent_str    = $params{ "-agent"        };
-    my $progress_fh  = $params{ "-progress"     };
+    my $cache_dir    = $params{ "-cache_dir"      };
+    my $expire_cache = $params{ "-expire_cache"   } || $Browser::Def_Expire_Cache;
+    my $log_fn       = $params{ "-log"            };
+    my $agent_str    = $params{ "-agent"          };
+    my $progress_fn  = $params{ "-progress"       };
+    my $dump_replies = $params{ "-dump_replies" };
+    my $dump_tree    = $params{ "-dump_tree"      };
 
 	my $self = {
-                'ua'           => new FormUserAgent,
-                'cookie_jar'   => new HTTP::Cookies,
-                'current_url'  => undef,
-                'cache_dir'    => $cache_dir,
-                'expire_cache' => $expire_cache,
-                'progress_fh'  => $progress_fh,
-                };
+                "ua"             => new FormUserAgent,
+                "cookie_jar"     => new HTTP::Cookies,
+                "current_url"    => undef,
+                "cache_dir"      => $cache_dir,
+                "expire_cache"   => $expire_cache,
+                "progress_fn"    => $progress_fn,
+                "dump_replies" => $dump_replies,
+                "dump_tree"      => $dump_tree
+              };
 
 
     if ($log_fn) {
         my $log_fh = new FileHandle;
-        $self->{ 'log_fh' } = $log_fh;
+        $self->{ "log_fh" } = $log_fh;
         $log_fh->open(">$log_fn") || croak "ERROR opening $log_fn: $!\n";
     }
 
@@ -1427,20 +1549,20 @@ sub new
     $self->{ "ua" }->agent($agent_str) if ($agent_str);
         
 	$self->{ "text_format_tags" } =  [
-                                      ['basefont', '<BASEFONT[^>]*>|</BASEFONT>'],
-                                      ['font', '<FONT[^>]*>|</FONT>'],
-                                      ['b', '<B>|</B>'],
-                                      ['i', '<I>|</I>'],
-                                      ['s', '<S>|</S>'],
-                                      ['strike', '<STRIKE>|</STRIKE>'],
-                                      ['u', '<U>|</U>'],
-                                      ['blink', '<BLINK>|</BLINK>'],
-                                      ['small', '<SMALL>|</SMALL>'],
-                                      ['big', '<BIG>|</BIG>'],
-                                      ['sub', '<SUB>|</SUB>'],
-                                      ['sup', '<SUP>|</SUP>'],
-                                      ['center', '<CENTER>|</CENTER>'],
-                                      ['marquee', '<MARQUEE[^>]*>|</MARQUEE>]']
+                                      ["basefont", "<BASEFONT[^>]*>|</BASEFONT>"],
+                                      ["font", "<FONT[^>]*>|</FONT>"],
+                                      ["b", "<B>|</B>"],
+                                      ["i", "<I>|</I>"],
+                                      ["s", "<S>|</S>"],
+                                      ["strike", "<STRIKE>|</STRIKE>"],
+                                      ["u", "<U>|</U>"],
+                                      ["blink", "<BLINK>|</BLINK>"],
+                                      ["small", "<SMALL>|</SMALL>"],
+                                      ["big", "<BIG>|</BIG>"],
+                                      ["sub", "<SUB>|</SUB>"],
+                                      ["sup", "<SUP>|</SUP>"],
+                                      ["center", "<CENTER>|</CENTER>"],
+                                      ["marquee", "<MARQUEE[^>]*>|</MARQUEE>]"]
                                      ];
 	
 	bless($self, $class);
@@ -1461,13 +1583,13 @@ sub redirect
 			return undef;
 		}
 		
-		my($url) = new URI::URL($response->header('Location'), $request->url()->as_string());
+		my($url) = new URI::URL($response->header("Location"), $request->url()->as_string());
 
 		$self->{ "cookie_jar" }->extract_cookies($response);
 		$request = $request->clone();
-		$request->method('GET');
-		$request->protocol('HTTP/1.0');
-		$request->content_type('text/html');
+		$request->method("GET");
+		$request->protocol("HTTP/1.0");
+		$request->content_type("text/html");
 		$request->url($url->abs());
 	}
     
@@ -1538,9 +1660,13 @@ sub make_cache_filename
 sub progress
 {
     my $self = shift @_;
-    my $fh = $self->progress_fh;
-    if ($fh) {
-        print $fh @_;
+    my $target = $self->progress_fn;
+	return if (!$target);
+
+    if (ref($target) eq "CODE") {
+        &$target(@_);
+	} elsif ($target) {
+        print $target @_;
     }
 }
 
@@ -1552,20 +1678,20 @@ sub request
 #    print "\n*** request(): $type $base_url $resource content = $content\n";
 
 	my $url = new URI::URL($resource, $base_url);
-	if (($type eq 'GET') && (defined $content)) {
+	if (($type eq "GET") && (defined $content)) {
         $url->equery($content);
 	}
 
     my $request = new HTTP::Request( $type => $url->abs() );
 
 	$request->protocol("HTTP/1.0");
-	$request->header( 'Accept-Language' => 'en-us' );
-	$request->header( 'Accept' => 'image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, */*' );
+	$request->header( "Accept-Language" => "en-us" );
+	$request->header( "Accept" => "image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, */*" );
 	$request->user_agent( $self->{ "ua" }->agent() );
 
-	if ($type eq 'POST') {
+	if ($type eq "POST") {
 		my $length = length($content);
-		$request->content_type('application/x-www-form-urlencoded');
+		$request->content_type("application/x-www-form-urlencoded");
 		$request->content_length($length);
 		$request->content($content);
 	}
@@ -1617,6 +1743,12 @@ sub do_navigate
 	$self->{ "current_url" } = $response->request()->url();
 	$self->writelog("The current url is $self->{current_url}\n");
 
+    if ($self->{ "dump_replies" }) {
+        $self->progress("\n===== BEGIN REPLY " . "="x60, "\n");
+        $self->progress($response->as_string);
+        $self->progress("\n===== END REPLY " . "="x60 . "\n");
+    }
+
 	return $response;
 }
 
@@ -1643,7 +1775,7 @@ sub clean_string
 	$text =~ s/\s+$//;
 	$text =~ s/^[\r\n]+//;
 	$text =~ s/[\r\n]+$//;
-	my($s) = chr(hex('a0'));
+	my($s) = chr(hex("a0"));
 	$text =~ s/$s//g;
 	return $text;
 }
@@ -1671,7 +1803,7 @@ sub get_element_text
 
 	my($text) = $self->get_string($root);
 	if (not defined $text) {
-		foreach my $element (@{$root->{'_content'}}) {
+		foreach my $element (@{$root->{"_content"}}) {
 			$text = $self->get_string($element);
 			if (defined $text) {
 				last;
@@ -1681,7 +1813,7 @@ sub get_element_text
 				if (lc($element->tag()) eq $tag->[0]) {
 					$text = $self->get_element_text($element);
 					last;
-				} elsif (defined $element->attr('href')) {
+				} elsif (defined $element->attr("href")) {
 					$text = $self->get_element_text($element);
 					last;
 				}
@@ -1705,16 +1837,16 @@ sub recurse_form
 
     my $tag = lc($element->tag());
         
-    if ($tag eq 'input') {
-        my $input_type = lc($element->attr('type') || 'text');
-        my $category   = $Input_Types{ $input_type }{ 'category' };
+    if ($tag eq "input") {
+        my $input_type = lc($element->attr("type") || "text");
+        my $category   = $Input_Types{ $input_type }{ "category" };
 
         if ($category) {
             push(@{ $form->{ $category }}, $element);
         }
     }
     elsif (exists($Tag_Types{ $tag })) {
-        push(@{ $form->{ $Tag_Types{ $tag }->{ 'category' }}}, $element);
+        push(@{ $form->{ $Tag_Types{ $tag }->{ "category" }}}, $element);
     }
     
     foreach my $child ($element->content_list) {
@@ -1729,25 +1861,25 @@ sub recurse_html
 	my ($self, $root, $depth) = @_;
 
 	my $last_element = undef;
-	my $before_text  = $root->{ 'associated_text' };
+	my $before_text  = $root->{ "associated_text" };
 
-	foreach my $element (@{$root->{ '_content' }}) {
+	foreach my $element (@{$root->{ "_content" }}) {
 		if (ref($element)) {
             my $tag_name = lc($element->tag());
 
-			if (defined $element->attr('href')) {
-				push(@{$self->{ 'hrefs' }}, $element);
+			if (defined $element->attr("href")) {
+				push(@{$self->{ "hrefs" }}, $element);
 			}
 
 			my $get_text = 1;
 			if (defined $before_text) {
-				if (($tag_name ne 'a') && ($tag_name ne 'option')) {
-					$element->{ 'before_text' } = $before_text;
+				if (($tag_name ne "a") && ($tag_name ne "option")) {
+					$element->{ "before_text" } = $before_text;
 				}
 				$before_text = undef;
 			}
 
-			foreach my $tag (@{$self->{ 'text_format_tags' }}) {
+			foreach my $tag (@{$self->{ "text_format_tags" }}) {
 				if ($tag_name eq $tag->[0]) {
                     $get_text = 0;
 					last;
@@ -1757,15 +1889,15 @@ sub recurse_html
 			if ($get_text) {
 				my $text = $self->get_element_text($element);
 				if (defined $text) {
-					$element->{ 'associated_text' } = $text;
+					$element->{ "associated_text" } = $text;
 					$before_text = $text;
 				}
 			} 
 	
 			if (ref($last_element)) {
-				if (not defined $last_element->{ 'associated_text' }) {
-					if (($tag_name eq 'input') || ($tag_name eq 'select')) {
-						$last_element->{ 'associated_text' } = $before_text;
+				if (not defined $last_element->{ "associated_text" }) {
+					if (($tag_name eq "input") || ($tag_name eq "select")) {
+						$last_element->{ "associated_text" } = $before_text;
 					}
 				}
 			}
@@ -1823,14 +1955,14 @@ sub parse
 
     # Clear out any old data 
 
-    my $tb = $self->{ 'tb' };
+    my $tb = $self->{ "tb" };
     $tb->delete() if ($tb);
 
-    foreach my $form_name (keys %{ $self->{ 'forms' }}) {
-        $self->{ 'forms' }{ $form_name }{ 'tree' }->delete();
+    foreach my $form_name (keys %{ $self->{ "forms" }}) {
+        $self->{ "forms" }{ $form_name }{ "tree" }->delete();
     }
-    $self->{ 'forms' } = undef;
-    $self->{ 'hrefs' } = undef;
+    $self->{ "forms" } = undef;
+    $self->{ "hrefs" } = undef;
 
     # Now create a new TreeBuilder object, and parse the content after first
     # getting rid of formatting tags.
@@ -1841,7 +1973,7 @@ sub parse
     $tb->parse($content);
 
 	$self->recurse_html($tb, 0);
-    $self->{ 'tb' } = $tb;
+    $self->{ "tb" } = $tb;
 
     # Parse forms separately
 
@@ -1866,12 +1998,12 @@ sub parse
         $tree->parse($form_content);
         $tree->eof();
 
-        my $form = $tree->look_down('_tag', 'form');
-        my $form_name = $form->attr('name') || $self->generate_default_form_name();
-        $form->{ 'tree' } = $tree;
+        my $form = $tree->look_down("_tag", "form");
+        my $form_name = $form->attr("name") || $self->generate_default_form_name();
+        $form->{ "tree" } = $tree;
 
         $self->recurse_form($form);
-        $self->{ 'forms' }{ $form_name } = $form;
+        $self->{ "forms" }{ $form_name } = $form;
     }
 
 	return $response;
@@ -1882,7 +2014,7 @@ sub generate_default_form_name
 {
     my ($self) = @_;
     my $i=0;
-    while (exists($self->{ 'forms' }{ "form$i" })) {
+    while (exists($self->{ "forms" }{ "form$i" })) {
         $i++;
     }
     return "form$i";
@@ -1895,7 +2027,7 @@ sub do_click
     my $href = $params{ "-href" } || croak "Must specify -href\n";
     
 	foreach my $element (@{$self->{hrefs}}) {
-		my($thishref) = $element->attr('href');
+		my($thishref) = $element->attr("href");
 		if (defined $thishref) {
 			if (lc($href) eq lc($thishref)) {
 				my($response) = $self->open(-resource => $href, 
@@ -1912,13 +2044,13 @@ sub do_select_option
 {
 	my ($self, $name, $item) = @_;
 
-	my($selectbox) = $self->get_element('select', $name);
+	my($selectbox) = $self->get_element("select", $name);
 	if (not defined $selectbox) {
 		$self->writelog("WARNING: select box with name $name not found!\n");
 		return 0;
 	}
 	my($multiple) = 0;
-	if (defined $selectbox->attr('multiple')) { #'
+	if (defined $selectbox->attr("multiple")) { #"
 		$multiple = 1;
 	}
 
@@ -1930,7 +2062,7 @@ sub do_select_option
 
                                  if (defined $element) {
                                      if (ref($element) eq "HTML::Element") {
-                                         if ($element->tag() eq 'option') {
+                                         if ($element->tag() eq "option") {
                                              push(@{$selectbox->{options}}, $element);	
                                              return 0;
                                          }
@@ -1938,16 +2070,16 @@ sub do_select_option
                                  }
                                  return 1;
                              },
-                             'ignoretext');
+                             "ignoretext");
 	}
 
 	foreach my $option (@{$selectbox->{options}}) {
-		if ( !$multiple && defined $option->attr('selected') ) {
-			delete($option->{'selected'});
+		if ( !$multiple && defined $option->attr("selected") ) {
+			delete($option->{"selected"});
 		}
 		
 		if ($self->is_correct_element($option, $item)) {
-			$option->attr('selected', " ");
+			$option->attr("selected", " ");
 			$self->writelog("FOUND OPTION $item FOR SELECT BOX $name\n");
 			if ($multiple) {
 				last;
@@ -1970,13 +2102,13 @@ sub do_set_checkbox
 {
 	my ($self, $name) = @_;
 	
-	my($checkbox) = $self->get_element('checkbox', $name);
+	my($checkbox) = $self->get_element("checkbox", $name);
 	if (not defined $checkbox) {
 		warn("WARNING: Unable to find checkbox with name $name\n");
 		return 0;
 	}
 
-	$checkbox->attr('checked', '');
+	$checkbox->attr("checked", "");
 	return 1;
 
 }
@@ -1986,12 +2118,12 @@ sub do_unset_checkbox
 {
 	my ($self, $name) = @_;
 	
-	my($checkbox) = $self->get_element('checkbox', $name);
+	my($checkbox) = $self->get_element("checkbox", $name);
 	if (not defined $checkbox) {
 		warn("ERROR: Unable to find checkbox with name $name\n");
 		return 0;
 	}
-	if (defined $checkbox->{'checked'}) {
+	if (defined $checkbox->{"checked"}) {
 		delete($checkbox->{checked});
 	}
 	return 1;
@@ -2002,15 +2134,15 @@ sub do_set_radio_button
 {
 	my ($self, $name, $val) = @_;
 
-    my @radio_buttons = $self->get_element('radio', $name);
+    my @radio_buttons = $self->get_element("radio", $name);
 
     foreach my $radio_button (@radio_buttons) {
-        my $radio_button_val = $radio_button->attr('value');
+        my $radio_button_val = $radio_button->attr("value");
         if (($radio_button_val eq $val) ||
             ($radio_button_val == $val)) {
-            $radio_button->attr('checked', 1);
+            $radio_button->attr("checked", 1);
         } else {
-            $radio_button->attr('checked', undef);
+            $radio_button->attr("checked", undef);
         }
     }
 
@@ -2022,31 +2154,31 @@ sub print_element
 {
 	my ($self, $element) = @_;
 
-    if (defined $element->{ 'before_text' }) {
-		print("BEFORE TEXT: " . $element->{ 'before_text' } . "\n");
+    if (defined $element->{ "before_text" }) {
+		print("BEFORE TEXT: " . $element->{ "before_text" } . "\n");
 	}
 
 	print("ELEMENT TAG: " . $element->tag());
-	if (defined $element->attr('name')) {
-		print(" NAME: " . $element->attr('name'));
+	if (defined $element->attr("name")) {
+		print(" NAME: " . $element->attr("name"));
 	}
 
-	if (defined $element->attr('type')) {
-		print(" TYPE: " . $element->attr('type'));
+	if (defined $element->attr("type")) {
+		print(" TYPE: " . $element->attr("type"));
 	}
 
-	if (defined $element->attr('value')) {
-		print(" VALUE: " . $element->attr('value'));
+	if (defined $element->attr("value")) {
+		print(" VALUE: " . $element->attr("value"));
 	}
 
-	if (defined $element->attr('src')) {
-        print " SRC: " . $element->attr('src');
+	if (defined $element->attr("src")) {
+        print " SRC: " . $element->attr("src");
     }
 
-	if (defined $element->attr('href')) {
-		print(" HREF: " . $element->attr('href'));
-		if (defined $element->{ 'associated_text' }) {
-			print(" ASSOCIATED TEXT: " . $element->{ 'associated_text' });
+	if (defined $element->attr("href")) {
+		print(" HREF: " . $element->attr("href"));
+		if (defined $element->{ "associated_text" }) {
+			print(" ASSOCIATED TEXT: " . $element->{ "associated_text" });
 		}
 	}
 	print("\n");
@@ -2071,15 +2203,15 @@ sub dump_page
 {
 	my ($self) = @_;
 
-	foreach my $form_name (keys %{ $self->{ 'forms' }}) {
-        my $form = $self->{ 'forms' }{ $form_name };
+	foreach my $form_name (keys %{ $self->{ "forms" }}) {
+        my $form = $self->{ "forms" }{ $form_name };
 
-        print("FORM: NAME = $form_name ACTION = ", $form->attr('action'), 
-              " METHOD = ", $form->attr('method'), "\n");
+        print("FORM: NAME = $form_name ACTION = ", $form->attr("action"), 
+              " METHOD = ", $form->attr("method"), "\n");
 
 		foreach my $type (keys %Input_Types) {
             print "type = $type\n";
-			next if ($type eq 'password');
+			next if ($type eq "password");
 			$self->print_type($form->{ $Input_Types{ $type }->{ "category" }});
 		}
         
@@ -2098,7 +2230,7 @@ sub make_pair
 	my($key) = uri_escape(shift);
 	my($value) = uri_escape(shift);
 	my($pair) = $key;
-	if (defined $value && $value ne '') {
+	if (defined $value && $value ne "") {
 		$pair .= "\=$value";
 	}
 	return $pair;
@@ -2110,17 +2242,17 @@ sub extract_pairs
 	my ($self, $form, $button) = @_;
 
 	my($query_string) = undef;
-	if (defined $button->attr('name')) {
-		my($button_name) = $button->attr('name');
+	if (defined $button->attr("name")) {
+		my($button_name) = $button->attr("name");
 		$button_name =~ $self->clean_string($button_name);
 		if (length($button_name)) {
-			$query_string = $self->make_pair($button->attr('name'), $button->attr('value')); #'
+			$query_string = $self->make_pair($button->attr("name"), $button->attr("value")); #"
 		}
 	}
 
 	foreach my $type (keys %Input_Types) {
-		if (	($type eq 'password') ||
-				($type eq 'submit') 	) {
+		if (	($type eq "password") ||
+				($type eq "submit") 	) {
 			next;
 		}
 
@@ -2136,8 +2268,8 @@ sub extract_pairs
 				}
 			}
 
-			my($key) = $elem->attr('name');
-			my($value) = $elem->attr('value');
+			my($key) = $elem->attr("name");
+			my($value) = $elem->attr("value");
 			if (defined $key) {
 				$self->writelog("name: $key, value: $value\n");			
 				if (defined $query_string) {
@@ -2152,11 +2284,11 @@ sub extract_pairs
 		foreach my $elem (@{$form->{ $Tag_Types{ $type }->{ "category" }}}) {
 			if (defined $elem->{options}) {
 				foreach my $option (@{$elem->{options}}) {
-					if (not defined $option->attr('selected')) {
+					if (not defined $option->attr("selected")) {
 						next;
 					}
-					my($key) = $elem->attr('name');
-					my($value) = $option->attr('value');
+					my($key) = $elem->attr("name");
+					my($value) = $option->attr("value");
 					if (defined $key && defined $value) {
 						$self->writelog("name: $key, value: $value\n");
 						if (defined $query_string) {
@@ -2165,9 +2297,9 @@ sub extract_pairs
 						$query_string .= $self->make_pair($key, $value);
 					}
 				}
-			} elsif ($elem->tag() eq 'textarea') {
-				$self->writelog("found a textarea element with name " . $elem->attr('name') . "\n");
-				my($key) = $elem->attr('name');
+			} elsif ($elem->tag() eq "textarea") {
+				$self->writelog("found a textarea element with name " . $elem->attr("name") . "\n");
+				my($key) = $elem->attr("name");
 				my($value) = $elem->{associated_text};
 				if (defined $key && defined $value) {
 					$self->writelog("name: $key, value: $value\n");
@@ -2198,31 +2330,31 @@ sub do_press
         croak "Must specify one of -value, -name, or -src\n";
     }
 
-    # Build a list of form names that we'll use to find the matching button
+    # Build a list of form names that we"ll use to find the matching button
 
     my @form_names;
     if (defined($form_name)) {
-        if (!exists($self->{ 'forms' }{ $form_name })) {
+        if (!exists($self->{ "forms" }{ $form_name })) {
             croak "There is no form named '$form_name' in this document\n";
         }
         @form_names = ( $form_name );
     } else {
-        @form_names = ( keys %{ $self->{ 'forms' }});
+        @form_names = ( keys %{ $self->{ "forms" }});
     }
 
     # Search list of forms for matching button
 
 	foreach my $form_name (@form_names) {
 
-        my $form = $self->{ 'forms' }{ $form_name };
+        my $form = $self->{ "forms" }{ $form_name };
 
-		my $action = $form->attr('action');
+		my $action = $form->attr("action");
 		
-		foreach my $button (@{ $form->{ 'buttons' }}) {
+		foreach my $button (@{ $form->{ "buttons" }}) {
 
-			my $this_value = $button->attr('value'); 			
-            my $this_src   = $button->attr('src');
-            my $this_name  = $button->attr('name');
+			my $this_value = $button->attr("value"); 			
+            my $this_src   = $button->attr("src");
+            my $this_name  = $button->attr("name");
 
             $this_value =~ s/^\s+//; $this_value =~ s/\s+$//;
 
@@ -2230,28 +2362,36 @@ sub do_press
                 $this_name eq $name ||
                 $this_src eq $src) {
 
-                my $action = $form->attr('action') || $self->{ 'current_url' }->abs();
-                my $method = uc($form->attr('method') || 'GET');
+                my $action = $form->attr("action") || $self->{ "current_url" }->abs();
+                my $method = uc($form->attr("method") || "GET");
 
-#                print "Preparing to execute form action $action, with method '$method'\n";
+#                print "Preparing to execute form action $action, with method "$method"\n";
 
 				my $query_string = $self->extract_pairs($form, $button);
 
 #                print "Going to ", $self->{ current_url }->abs(), " request $action method $method query = ", $query_string, "\n";
 
 				my $response = $self->request($method, $action, 
-                                              $self->{ 'current_url' }->abs(), $query_string);
+                                              $self->{ "current_url" }->abs(), $query_string);
 
 				if (defined $response) {
 					if ($response->is_error()) {
 						print "ERROR: Unable to process response due to HTTP error code " . $response->code() . "\n";
 						$response = undef;
 					} else {
-						$self->{ 'current_url' } = $response->request()->url();
+						$self->{ "current_url" } = $response->request()->url();
 #						print "SETTING Current URL = $self->{current_url}\n";
 						$self->parse($response);
 					}
 				}
+
+                if ($self->{ "dump_replies" }) {
+                    $self->progress("\n===== BEGIN REPLY " . "="x60, "\n");
+                    $self->progress($response->as_string);
+                    $self->tree->dump($self->{ "progress" });
+                    $self->progress("\n===== END REPLY " . "="x60 . "\n");
+                }
+
 				return $response;
 			}
 		}
@@ -2265,11 +2405,11 @@ sub fillin
 {
 	my ($self, $name, $value) = @_;
 	
-	my $textbox = $self->get_element('text', $name) || $self->get_element('textfield', $name) ||
-        croak "Cannot find text element '$name' in page\n";
+	my $textbox = $self->get_element("text", $name) || $self->get_element("textfield", $name) ||
+      croak "Cannot find text element '$name' in page\n";
     
     $self->writelog("SETTING TEXT BOX ELEMENT WITH VALUE $value\n");
-    $textbox->attr('value', $value);
+    $textbox->attr("value", $value);
 }
 
 
@@ -2278,12 +2418,12 @@ sub get_checkboxes
 	my ($self, $name) = @_;
 
 	my(@checkboxes);
-	foreach my $form_name (keys %{$self->{ 'forms' }}) {
-        my $form = $self->{ 'forms' }{ $form_name };
+	foreach my $form_name (keys %{$self->{ "forms" }}) {
+        my $form = $self->{ "forms" }{ $form_name };
 		if (defined $form->{checkboxes}) {
 			if (defined $name) {
 				foreach my $checkbox (@{$form->{checkboxes}}) {
-					my($curname) = $checkbox->attr('name');
+					my($curname) = $checkbox->attr("name");
 					if (defined $curname && lc($curname) eq ($name)) {
 						push(@checkboxes, $checkbox);
 					}
@@ -2303,7 +2443,7 @@ sub is_correct_element
 	
 	my($checked_element) = undef;
 	$name = lc($name);
-	my($checkname) = $element->attr('name');
+	my($checkname) = $element->attr("name");
 	if (defined $checkname && lc($checkname) eq $name) {
 		$checked_element = $element;
 	} elsif (defined $element->{before_text} && lc($element->{before_text}) eq $name) {
@@ -2328,8 +2468,8 @@ sub get_element
 	}
 
     my @matching_elems;
-	foreach my $form_name ( keys %{ $self->{ 'forms' }}) {
-        my $form = $self->{ 'forms' }{ $form_name };
+	foreach my $form_name ( keys %{ $self->{ "forms" }}) {
+        my $form = $self->{ "forms" }{ $form_name };
 		next if (!defined $form->{ $category });
         
         foreach my $elem (@{$form->{ $category }}) {
@@ -2407,7 +2547,7 @@ sub AUTOLOAD
 
             my $retval = $self->$handler(%params);
             if ($retval) {
-                # method ran successfully - we're done
+                # method ran successfully - we"re done
                 return $retval;
             }
 

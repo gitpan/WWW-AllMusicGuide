@@ -15,15 +15,20 @@ Options:
   --covers     : Save album covers
   --manual     : Don't automatically select likely matches
   --quiet      : Don't show progress info
-  --url        : Use url (default "http://www.allmusic.com")
+  --url        : Use url (default http://www.allmusic.com)
+  --perl       : Output as perl data structures
   --python     : Output as python data structures
 
+  --nocache    : Disable caching of HTML responses
+  --nocroak    : Don't die when a parse error is encountered
   --help       : Show this message
 
 END
+; # ' help broken emacs perl-mode
+    
     exit(1);
 }
-
+    
 use strict;
 use FindBin qw( $RealBin );
 use lib "$RealBin/../lib";
@@ -37,19 +42,35 @@ $|=1;
 
 # PARSE COMMAND LINE ARGUMENTS
 
-my ($opt_album, $opt_artist, $opt_covers, $opt_dump, $opt_help, $opt_id);
-my ($opt_manual, $opt_nocache, $opt_quiet, $opt_python, $opt_save, $opt_url );
+my ( $opt_album, 
+     $opt_artist, 
+     $opt_covers,
+     $opt_dump, 
+     $opt_help, 
+     $opt_id,
+     $opt_manual, 
+     $opt_nocache, 
+     $opt_nocroak,
+     $opt_quiet, 
+     $opt_perl,
+     $opt_python, 
+	 $opt_readable,
+     $opt_save, 
+     $opt_url );
 
 GetOptions("album=s"       => \$opt_album,
            "artist=s"      => \$opt_artist,
-           "covers"        => \$opt_covers,
+           "covers=s"      => \$opt_covers,
            "dump:s"        => \$opt_dump,
            "help"          => \$opt_help,
            "id=s"          => \$opt_id,
            "manual"        => \$opt_manual,
            "nocache"       => \$opt_nocache,
+           "nocroak"       => \$opt_nocroak,
+           "perl"          => \$opt_perl,
            "python"        => \$opt_python,
            "quiet"         => \$opt_quiet,
+		   "readable"      => \$opt_readable,
            "save=s"        => \$opt_save,
            "url=s"         => \$opt_url
           );
@@ -75,6 +96,12 @@ if (defined($opt_dump) && !$opt_dump) {
     $opt_dump = "artists,albums";
 }
 
+# --python or --perl imply --quiet
+
+if ($opt_python || $opt_perl) {
+    $opt_quiet = 1;
+}
+
 # Show usage if necessary
 
 usage() if ($opt_help || (!$opt_artist && !$opt_album && !$opt_id));
@@ -87,11 +114,17 @@ my $cache_dir = determine_cache_dir() unless ($opt_nocache);
 # Now create WWW::AllMusicGuide object with options specified and call
 # appropriate methods.
 
+sub shit
+{
+    print @_;
+}
+
 my $amg = new WWW::AllMusicGuide(-progress    => $opt_quiet ? undef : \*STDOUT,
                                  -cache_dir   => $opt_nocache ? undef : $cache_dir,
                                  -url         => $opt_url,
                                  -dump        => $opt_dump,
-                                 -save_covers => $opt_covers
+                                 -save_covers => $opt_covers,
+                                 -croak       => $opt_nocroak ? 0 : 1
                                  );
 
 my $result;
@@ -121,33 +154,87 @@ if ($opt_id) {
 
 }
 
-if (ref($result) eq "ARRAY") {
+if ((ref($result) eq "ARRAY") && !$opt_quiet) {
     print "Multiple search results found:\n";
 }
 
 
-if ($opt_python) {
-    die "Outputting as python data structures is not supported yet\n";
+if ($opt_perl) {
+    print dump_perl( $result );
+} elsif ($opt_python) {
+    print dump_python( $result );
+} elsif ($opt_readable) {
+	print dump_readable( $result );
 } else {
-    $Data::Dumper::Indent = 1;
+    print dump_perl( $result );
+}
 
+
+sub dump_readable
+{
+	my $str = "";
+	if (exists($result->{ "ALBUM_TITLE" })) {
+        
+		$str .= <<END;
+=====[ ALBUM ]=============================================================
+
+Artist: $result->{ ARTIST }  ($result->{ ARTIST_ID })
+Album:  $result->{ ALBUM_TITLE } 
+
+END
+		my $num_tracks = scalar @{ $result->{ "TRACKS" } };
+
+		$str .= "$num_tracks tracks: \n\n";
+
+		foreach my $track (@{$result->{ "TRACKS" }}) {
+			$str .= sprintf("%2d. %-50s (%s)\n",
+							$track->{ NUMBER },
+							$track->{ NAME },
+							$track->{ LENGTH });
+		}
+
+	}
+
+	elsif (exists($result->{ "DISCOGRAPHY" })) {
+
+		$str .= <<END;
+=====[ ARTIST ]===========================================================
+END
+  ;
+	}
+	$str .= "\n" . "="x75 . "\n";
+	  
+	return $str;
+}
+
+
+sub dump_perl
+{
+    my ($result) = @_;
+
+    $Data::Dumper::Indent = 1;
+    
     if ($opt_save) {
         open(SAVEFILE, ">$opt_save") || die "Cannot write to save file $opt_save: $!\n";
         print SAVEFILE Dumper($result);
         close(SAVEFILE);
-    } else {
-        print Dumper($result);
-    }
+        return "";
+    } 
+
+    return Dumper($result);
 }
 
 
 sub dump_python
 {
-}
+    my ($result) = @_;
 
+    my $str = Dumper($result);
 
-sub dump_python_artist
-{
+    $str =~ s/ => / : /mg;
+    $str =~ s/\$VAR1 = //mg;
+    $str =~ s/;\s*$/\n/mg;
+    return $str;
 }
 
 
@@ -167,10 +254,10 @@ sub determine_cache_dir
 
     if ($tmpdir && !$opt_nocache) {
         my $cache_dir = catdir($tmpdir, "AllMusicGuideCache");
-        print STDOUT "Using cache dir $cache_dir\n";
+        print STDERR "Using cache dir $cache_dir\n" unless $opt_quiet;
         return $cache_dir;
     } else {
-        print STDOUT "Cache is disabled\n";
+        print STDERR "Cache is disabled\n" unless $opt_quiet;
         return $cache_dir;
     }
 }
